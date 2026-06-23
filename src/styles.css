@@ -1,0 +1,185 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #f8fafc;
+  background: #050505;
+  font-family:
+    Impact, Haettenschweiler, "Arial Narrow Bold", Inter, ui-sans-serif,
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 82% 4%, rgba(247, 195, 19, 0.28), transparent 24rem),
+    radial-gradient(circle at 12% 88%, rgba(255, 176, 0, 0.18), transparent 18rem),
+    #050505;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgba(247, 195, 19, 0.55);
+  outline-offset: 2px;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  margin: 0;
+}
+
+.poster-bg {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(112deg, rgba(5, 5, 5, 0.98) 0%, rgba(5, 5, 5, 0.92) 48%, rgba(113, 70, 0, 0.72) 100%),
+    #050505;
+}
+
+.poster-bg::before,
+.poster-bg::after {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+}
+
+.poster-bg::before {
+  opacity: 0.28;
+  background-image:
+    radial-gradient(circle, rgba(247, 195, 19, 0.58) 1.2px, transparent 1.2px),
+    linear-gradient(118deg, transparent 0 58%, rgba(247, 195, 19, 0.16) 58% 64%, transparent 64%);
+  background-position:
+    0 0,
+    center;
+  background-size:
+    18px 18px,
+    cover;
+  mask-image: radial-gradient(circle at 80% 0%, #000 0 22rem, transparent 40rem);
+}
+
+.poster-bg::after {
+  opacity: 0.16;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 6px);
+  mix-blend-mode: screen;
+}
+
+.poster-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(247, 195, 19, 0.22);
+  background:
+    linear-gradient(145deg, rgba(24, 24, 27, 0.97), rgba(9, 9, 11, 0.97)),
+    #09090b;
+}
+
+.poster-card::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.12;
+  background-image: radial-gradient(circle, #fff 0.9px, transparent 1px);
+  background-size: 13px 13px;
+  mask-image: linear-gradient(115deg, transparent, #000 28%, transparent 72%);
+}
+
+.poster-surface {
+  border: 1px solid rgba(247, 195, 19, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 221, 0.92)),
+    #fff7dd;
+  color: #09090b;
+}
+
+.poster-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(247, 195, 19, 0.35);
+  background:
+    linear-gradient(103deg, rgba(0, 0, 0, 0.98) 0 52%, rgba(247, 195, 19, 0.88) 52% 68%, rgba(0, 0, 0, 0.92) 68%),
+    #050505;
+}
+
+.poster-hero::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.82), transparent 52%),
+    radial-gradient(circle at 10% 100%, rgba(247, 195, 19, 0.3), transparent 20rem);
+}
+
+.poster-hero-media {
+  position: absolute;
+  top: -12%;
+  right: -8%;
+  bottom: -18%;
+  width: min(42%, 25rem);
+  transform: skewX(-11deg);
+  border-left: 10px solid #f7c313;
+  opacity: 0.72;
+}
+
+.poster-hero-media img {
+  width: 122%;
+  height: 100%;
+  object-fit: cover;
+  transform: skewX(11deg) translateX(-9%);
+  filter: saturate(1.08) contrast(1.18);
+}
+
+.poster-title {
+  color: #ffffff;
+  font-family:
+    Impact, Haettenschweiler, "Arial Narrow Bold", Inter, ui-sans-serif,
+    sans-serif;
+  font-weight: 900;
+  line-height: 0.86;
+  text-transform: uppercase;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.35),
+    0 14px 34px rgba(0, 0, 0, 0.6);
+}
+
+.poster-word-gold {
+  display: block;
+  color: #f7c313;
+}
+
+.poster-pill {
+  border: 1px solid rgba(247, 195, 19, 0.4);
+  background: rgba(247, 195, 19, 0.13);
+  color: #ffe38a;
+}
+
+@media (max-width: 768px) {
+  .poster-hero {
+    background:
+      linear-gradient(160deg, rgba(0, 0, 0, 0.98) 0 62%, rgba(247, 195, 19, 0.76) 62% 72%, rgba(0, 0, 0, 0.9) 72%),
+      #050505;
+  }
+
+  .poster-hero-media {
+    right: -24%;
+    width: 58%;
+    opacity: 0.32;
+  }
+}
