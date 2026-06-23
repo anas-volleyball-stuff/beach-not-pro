@@ -74,3 +74,5 @@ $$;
 
 grant execute on function public.save_match_score(uuid, integer, integer, text) to anon, authenticated;
 grant execute on function public.reset_tournament(text) to anon, authenticated;
+
+notify pgrst, 'reload schema';
