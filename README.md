@@ -38,6 +38,12 @@ The migration creates and seeds:
 
 Scores are saved through the `save_match_score` database function. Database triggers recalculate standings and advance `current_round` to the lowest incomplete round.
 
+Rankings are calculated in the app with:
+
+```text
+0.95 * wins + 0.05 * point differential
+```
+
 Admin mode is unlocked in the app with the event password. Admins can save score
 changes and reset the tournament back to an unplayed state.
 

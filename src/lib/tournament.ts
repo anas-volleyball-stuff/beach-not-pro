@@ -1,11 +1,23 @@
 import type { HydratedMatch, Match, Player, Standing } from "../types";
 
 export const TOTAL_ROUNDS = 5;
+export const WIN_WEIGHT = 0.95;
+export const POINT_DIFFERENTIAL_WEIGHT = 0.05;
+
+export function rankingScore(standing: Pick<Standing, "wins" | "point_differential">) {
+  return (
+    WIN_WEIGHT * standing.wins +
+    POINT_DIFFERENTIAL_WEIGHT * standing.point_differential
+  );
+}
 
 export function byStandingRank(
   a: Standing & { player?: Player },
   b: Standing & { player?: Player },
 ) {
+  const scoreDifference = rankingScore(b) - rankingScore(a);
+
+  if (scoreDifference !== 0) return scoreDifference;
   if (b.wins !== a.wins) return b.wins - a.wins;
   if (b.point_differential !== a.point_differential) {
     return b.point_differential - a.point_differential;

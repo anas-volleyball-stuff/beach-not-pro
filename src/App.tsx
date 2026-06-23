@@ -22,6 +22,7 @@ import {
   formatTeam,
   getMatchOutcome,
   getRestingPlayers,
+  rankingScore,
 } from "./lib/tournament";
 import { useHashRoute } from "./hooks/useHashRoute";
 import { useTournament } from "./hooks/useTournament";
@@ -591,7 +592,7 @@ function RankingsPage({
       <PageTitle
         icon={Trophy}
         title="Rankings"
-        subtitle="Men and women are ranked separately by wins, then point differential."
+        subtitle="Score = 0.95 x wins + 0.05 x point differential."
       />
       <div className="grid gap-5 lg:grid-cols-2">
         <RankingTable title="Men" standings={mensStandings} />
@@ -619,11 +620,12 @@ function RankingTable({
         </span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] border-collapse text-left">
+        <table className="w-full min-w-[600px] border-collapse text-left">
           <thead className="bg-zinc-950 text-sm uppercase text-yellow-300">
             <tr>
               <th className="px-4 py-3 font-black">Rank</th>
               <th className="px-4 py-3 font-black">Player</th>
+              <th className="px-4 py-3 font-black">Score</th>
               <th className="px-4 py-3 font-black">Wins</th>
               <th className="px-4 py-3 font-black">Losses</th>
               <th className="px-4 py-3 font-black">Diff</th>
@@ -646,6 +648,9 @@ function RankingTable({
                   <div className="text-xs font-black uppercase tracking-normal text-zinc-500">
                     {genderLabel(standing.player.gender)}
                   </div>
+                </td>
+                <td className="px-4 py-4 font-black text-black">
+                  {rankingScore(standing).toFixed(2)}
                 </td>
                 <td className="px-4 py-4 font-black text-black">{standing.wins}</td>
                 <td className="px-4 py-4 font-black text-zinc-600">
@@ -1074,7 +1079,7 @@ function RankingStrip({
       <span>
         <span className="block font-black text-black">{standing.player.name}</span>
         <span className="text-sm font-black uppercase text-zinc-600">
-          {standing.wins}W · {standing.losses}L
+          Score {rankingScore(standing).toFixed(2)} · {standing.wins}W
         </span>
       </span>
       <span
