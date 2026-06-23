@@ -31,7 +31,7 @@ npm run dev
 
 The migration creates and seeds:
 
-- `players`: all 14 tournament players with gender and rating.
+- `players`: all 14 tournament players with gender and internal seeding metadata.
 - `matches`: the fixed five-round schedule only.
 - `tournament_state`: the current round.
 - `player_standings`: persisted wins, losses, points, and point differential.

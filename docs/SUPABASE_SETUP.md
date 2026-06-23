@@ -25,6 +25,16 @@ run the dashboard setup chunks instead, in this exact order:
 Use a blank SQL Editor query for each chunk and run the full contents of that
 chunk before moving to the next one.
 
+## Reset the Tournament
+
+To start the tournament fresh without changing the fixed players or schedule,
+run:
+
+`supabase/dashboard-setup/04_reset_tournament.sql`
+
+That clears all saved scores, marks every match open, resets the current round to
+Round 1, and recalculates standings back to zero.
+
 ## 3. Confirm Realtime
 
 In Supabase, open Database > Replication and confirm these tables are enabled for Realtime:

@@ -50,6 +50,10 @@ function classNames(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
+function genderLabel(gender: Player["gender"]) {
+  return gender === "men" ? "M" : "F";
+}
+
 export default function App() {
   const route = useHashRoute();
   const activeRoute = parseRoute(route);
@@ -234,7 +238,7 @@ function HomePage({
               <CircleDot size={15} className="text-yellow-300" aria-hidden="true" />
               Current Round {currentRound}
             </div>
-            <h1 className="poster-title max-w-2xl text-5xl tracking-normal sm:text-7xl">
+            <h1 className="poster-title max-w-2xl text-6xl tracking-normal sm:text-8xl">
               Beach
               <span className="poster-word-gold">Not Pro</span>
               Tour
@@ -281,11 +285,16 @@ function HomePage({
         </section>
 
         <section className="poster-surface rounded-md p-5 shadow-court">
-          <SectionHeader icon={Medal} title="Current Rankings Top 5" />
-          <div className="mt-4 divide-y divide-yellow-900/15">
-            {standings.slice(0, 5).map((standing, index) => (
-              <RankingStrip key={standing.player_id} standing={standing} rank={index + 1} />
-            ))}
+          <SectionHeader icon={Medal} title="Current Leaders" />
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <LeaderList
+              title="Men"
+              standings={standings.filter((standing) => standing.player.gender === "men").slice(0, 3)}
+            />
+            <LeaderList
+              title="Women"
+              standings={standings.filter((standing) => standing.player.gender === "women").slice(0, 3)}
+            />
           </div>
         </section>
       </div>
@@ -407,65 +416,93 @@ function RankingsPage({
 }: {
   standings: Array<Standing & { player: Player }>;
 }) {
+  const mensStandings = standings.filter((standing) => standing.player.gender === "men");
+  const womensStandings = standings.filter(
+    (standing) => standing.player.gender === "women",
+  );
+
   return (
     <div className="space-y-5">
       <PageTitle
         icon={Trophy}
         title="Rankings"
-        subtitle="Sorted by wins, then point differential."
+        subtitle="Men and women are ranked separately by wins, then point differential."
       />
-      <section className="poster-surface overflow-hidden rounded-md shadow-court">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[620px] border-collapse text-left">
-            <thead className="bg-black text-sm uppercase text-yellow-300">
-              <tr>
-                <th className="px-4 py-3 font-black">Rank</th>
-                <th className="px-4 py-3 font-black">Player</th>
-                <th className="px-4 py-3 font-black">Wins</th>
-                <th className="px-4 py-3 font-black">Losses</th>
-                <th className="px-4 py-3 font-black">Point Differential</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-yellow-900/15">
-              {standings.map((standing, index) => (
-                <tr key={standing.player_id} className="hover:bg-yellow-100/70">
-                  <td className="px-4 py-4 text-lg font-black text-yellow-700">
-                    {index + 1}
-                  </td>
-                  <td className="px-4 py-4">
-                    <a
-                      href={`#/players/${standing.player_id}`}
-                      className="inline-flex items-center gap-2 font-black text-black hover:text-yellow-700"
-                    >
-                      <UserRound size={18} aria-hidden="true" />
-                      {standing.player.name}
-                    </a>
-                    <div className="text-xs font-black uppercase tracking-normal text-zinc-500">
-                      {standing.player.gender} · rating {standing.player.rating}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 font-black text-black">{standing.wins}</td>
-                  <td className="px-4 py-4 font-black text-zinc-600">
-                    {standing.losses}
-                  </td>
-                  <td
-                    className={classNames(
-                      "px-4 py-4 font-black",
-                      standing.point_differential >= 0
-                        ? "text-yellow-700"
-                        : "text-red-700",
-                    )}
-                  >
-                    {standing.point_differential > 0 ? "+" : ""}
-                    {standing.point_differential}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <RankingTable title="Men" standings={mensStandings} />
+        <RankingTable title="Women" standings={womensStandings} />
+      </div>
     </div>
+  );
+}
+
+function RankingTable({
+  title,
+  standings,
+}: {
+  title: string;
+  standings: Array<Standing & { player: Player }>;
+}) {
+  return (
+    <section className="poster-surface overflow-hidden rounded-md shadow-court">
+      <div className="flex items-center justify-between gap-3 bg-black px-4 py-3">
+        <h2 className="text-xl font-black uppercase tracking-normal text-white">
+          {title}
+        </h2>
+        <span className="rounded-full bg-yellow-400 px-3 py-1 text-xs font-black uppercase text-black">
+          {standings.length} players
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[520px] border-collapse text-left">
+          <thead className="bg-zinc-950 text-sm uppercase text-yellow-300">
+            <tr>
+              <th className="px-4 py-3 font-black">Rank</th>
+              <th className="px-4 py-3 font-black">Player</th>
+              <th className="px-4 py-3 font-black">Wins</th>
+              <th className="px-4 py-3 font-black">Losses</th>
+              <th className="px-4 py-3 font-black">Diff</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-yellow-900/15">
+            {standings.map((standing, index) => (
+              <tr key={standing.player_id} className="hover:bg-yellow-100/70">
+                <td className="px-4 py-4 text-lg font-black text-yellow-700">
+                  {index + 1}
+                </td>
+                <td className="px-4 py-4">
+                  <a
+                    href={`#/players/${standing.player_id}`}
+                    className="inline-flex items-center gap-2 font-black text-black hover:text-yellow-700"
+                  >
+                    <UserRound size={18} aria-hidden="true" />
+                    {standing.player.name}
+                  </a>
+                  <div className="text-xs font-black uppercase tracking-normal text-zinc-500">
+                    {genderLabel(standing.player.gender)}
+                  </div>
+                </td>
+                <td className="px-4 py-4 font-black text-black">{standing.wins}</td>
+                <td className="px-4 py-4 font-black text-zinc-600">
+                  {standing.losses}
+                </td>
+                <td
+                  className={classNames(
+                    "px-4 py-4 font-black",
+                    standing.point_differential >= 0
+                      ? "text-yellow-700"
+                      : "text-red-700",
+                  )}
+                >
+                  {standing.point_differential > 0 ? "+" : ""}
+                  {standing.point_differential}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -526,7 +563,7 @@ function PlayerPage({
       <PageTitle
         icon={UserRound}
         title={player.name}
-        subtitle={`${player.gender} · rating ${player.rating}`}
+        subtitle={genderLabel(player.gender)}
       />
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -866,6 +903,25 @@ function RankingStrip({
         {standing.point_differential}
       </span>
     </a>
+  );
+}
+
+function LeaderList({
+  title,
+  standings,
+}: {
+  title: string;
+  standings: Array<Standing & { player: Player }>;
+}) {
+  return (
+    <div>
+      <h3 className="text-sm font-black uppercase text-zinc-600">{title}</h3>
+      <div className="mt-2 divide-y divide-yellow-900/15">
+        {standings.map((standing, index) => (
+          <RankingStrip key={standing.player_id} standing={standing} rank={index + 1} />
+        ))}
+      </div>
+    </div>
   );
 }
 
