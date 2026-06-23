@@ -29,6 +29,10 @@ For an existing database that was set up before admin mode was added, run:
 
 `supabase/dashboard-setup/05_admin_functions_update.sql`
 
+To add the semifinals/final playoff phase and scoring rules, run:
+
+`supabase/dashboard-setup/06_playoffs_setup.sql`
+
 ## Reset the Tournament
 
 To start the tournament fresh from Supabase SQL Editor without changing the fixed

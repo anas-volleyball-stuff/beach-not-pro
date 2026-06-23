@@ -1,4 +1,11 @@
-import type { HydratedMatch, Match, Player, Standing } from "../types";
+import type {
+  HydratedMatch,
+  HydratedPlayoffMatch,
+  Match,
+  Player,
+  PlayoffMatch,
+  Standing,
+} from "../types";
 
 export const TOTAL_ROUNDS = 5;
 export const WIN_WEIGHT = 0.95;
@@ -60,6 +67,72 @@ export function hydrateMatches(
       }
       return a.court_number - b.court_number;
     });
+}
+
+export function hydratePlayoffMatches(
+  matches: PlayoffMatch[],
+  players: Player[],
+): HydratedPlayoffMatch[] {
+  const playersById = new Map(players.map((player) => [player.id, player]));
+
+  return matches
+    .map((match) => {
+      const teamA =
+        match.team_a_player_1 && match.team_a_player_2
+          ? {
+              player1: playersById.get(match.team_a_player_1),
+              player2: playersById.get(match.team_a_player_2),
+            }
+          : null;
+      const teamB =
+        match.team_b_player_1 && match.team_b_player_2
+          ? {
+              player1: playersById.get(match.team_b_player_1),
+              player2: playersById.get(match.team_b_player_2),
+            }
+          : null;
+
+      return {
+        ...match,
+        teamA:
+          teamA?.player1 && teamA.player2
+            ? { player1: teamA.player1, player2: teamA.player2 }
+            : null,
+        teamB:
+          teamB?.player1 && teamB.player2
+            ? { player1: teamB.player1, player2: teamB.player2 }
+            : null,
+      };
+    })
+    .sort((a, b) => {
+      if (a.stage !== b.stage) return a.stage === "semi" ? -1 : 1;
+      return a.match_number - b.match_number;
+    });
+}
+
+export function formatPlayoffTeam(match: HydratedPlayoffMatch, side: "A" | "B") {
+  const team = side === "A" ? match.teamA : match.teamB;
+  if (!team) return "TBD";
+  return `${team.player1.name} + ${team.player2.name}`;
+}
+
+export function isValidCappedScore(
+  scoreA: number,
+  scoreB: number,
+  target: number,
+  cap: number,
+) {
+  if (!Number.isInteger(scoreA) || !Number.isInteger(scoreB)) return false;
+  if (scoreA < 0 || scoreB < 0 || scoreA === scoreB) return false;
+
+  const winner = Math.max(scoreA, scoreB);
+  const loser = Math.min(scoreA, scoreB);
+
+  if (winner < target || winner > cap) return false;
+  if (winner < cap && winner - loser < 2) return false;
+  if (winner === cap && loser > cap - 1) return false;
+
+  return true;
 }
 
 export function getRestingPlayers(

@@ -1,11 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
-import { byStandingRank, hydrateMatches } from "../lib/tournament";
-import type { HydratedMatch, Match, Player, Standing, TournamentState } from "../types";
+import {
+  byStandingRank,
+  hydrateMatches,
+  hydratePlayoffMatches,
+} from "../lib/tournament";
+import type {
+  FinalFormat,
+  HydratedMatch,
+  HydratedPlayoffMatch,
+  Match,
+  Player,
+  PlayoffMatch,
+  Standing,
+  TournamentState,
+} from "../types";
 
 type TournamentData = {
   players: Player[];
   matches: HydratedMatch[];
+  playoffMatches: HydratedPlayoffMatch[];
   standings: Array<Standing & { player: Player }>;
   tournamentState: TournamentState | null;
 };
@@ -13,6 +27,7 @@ type TournamentData = {
 const emptyData: TournamentData = {
   players: [],
   matches: [],
+  playoffMatches: [],
   standings: [],
   tournamentState: null,
 };
@@ -30,7 +45,13 @@ export function useTournament() {
       return;
     }
 
-    const [playersResult, matchesResult, standingsResult, stateResult] =
+    const [
+      playersResult,
+      matchesResult,
+      playoffMatchesResult,
+      standingsResult,
+      stateResult,
+    ] =
       await Promise.all([
         supabase.from("players").select("*").order("name"),
         supabase
@@ -38,6 +59,11 @@ export function useTournament() {
           .select("*")
           .order("round_number")
           .order("court_number"),
+        supabase
+          .from("playoff_matches")
+          .select("*")
+          .order("stage")
+          .order("match_number"),
         supabase.from("player_standings").select("*"),
         supabase
           .from("tournament_state")
@@ -46,9 +72,15 @@ export function useTournament() {
           .maybeSingle(),
       ]);
 
+    const playoffTableMissing =
+      playoffMatchesResult.error &&
+      "code" in playoffMatchesResult.error &&
+      playoffMatchesResult.error.code === "PGRST205";
+
     const failure =
       playersResult.error ||
       matchesResult.error ||
+      (playoffTableMissing ? null : playoffMatchesResult.error) ||
       standingsResult.error ||
       stateResult.error;
 
@@ -60,6 +92,10 @@ export function useTournament() {
 
     const players = (playersResult.data ?? []) as Player[];
     const matches = hydrateMatches((matchesResult.data ?? []) as Match[], players);
+    const playoffMatches = hydratePlayoffMatches(
+      (playoffTableMissing ? [] : (playoffMatchesResult.data ?? [])) as PlayoffMatch[],
+      players,
+    );
     const playersById = new Map(players.map((player) => [player.id, player]));
     const standings = ((standingsResult.data ?? []) as Standing[])
       .map((standing) => {
@@ -75,6 +111,7 @@ export function useTournament() {
     setData({
       players,
       matches,
+      playoffMatches,
       standings,
       tournamentState: stateResult.data as TournamentState | null,
     });
@@ -106,6 +143,11 @@ export function useTournament() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "player_standings" },
+        () => void fetchTournament(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "playoff_matches" },
         () => void fetchTournament(),
       )
       .on(
@@ -166,6 +208,84 @@ export function useTournament() {
     [fetchTournament],
   );
 
+  const initializePlayoffs = useCallback(
+    async (adminPassword: string) => {
+      if (!supabase) {
+        throw new Error("Supabase is not configured yet.");
+      }
+
+      const { error: rpcError } = await supabase.rpc("initialize_playoffs", {
+        p_admin_password: adminPassword,
+      });
+
+      if (rpcError) {
+        throw new Error(rpcError.message);
+      }
+
+      await fetchTournament();
+    },
+    [fetchTournament],
+  );
+
+  const savePlayoffScore = useCallback(
+    async (
+      playoffMatchId: string,
+      scoreA: number,
+      scoreB: number,
+      adminPassword: string,
+    ) => {
+      if (!supabase) {
+        throw new Error("Supabase is not configured yet.");
+      }
+
+      const { error: rpcError } = await supabase.rpc("save_playoff_score", {
+        p_match_id: playoffMatchId,
+        p_score_a: scoreA,
+        p_score_b: scoreB,
+        p_admin_password: adminPassword,
+      });
+
+      if (rpcError) {
+        throw new Error(rpcError.message);
+      }
+
+      await fetchTournament();
+    },
+    [fetchTournament],
+  );
+
+  const saveFinalScore = useCallback(
+    async (
+      playoffMatchId: string,
+      finalFormat: FinalFormat,
+      sets: Array<[number, number]>,
+      adminPassword: string,
+    ) => {
+      if (!supabase) {
+        throw new Error("Supabase is not configured yet.");
+      }
+
+      const { error: rpcError } = await supabase.rpc("save_final_score", {
+        p_match_id: playoffMatchId,
+        p_final_format: finalFormat,
+        p_set1_a: sets[0]?.[0] ?? null,
+        p_set1_b: sets[0]?.[1] ?? null,
+        p_set2_a: sets[1]?.[0] ?? null,
+        p_set2_b: sets[1]?.[1] ?? null,
+        p_set3_a: sets[2]?.[0] ?? null,
+        p_set3_b: sets[2]?.[1] ?? null,
+        p_admin_password: adminPassword,
+      });
+
+      if (rpcError) {
+        throw new Error(rpcError.message);
+      }
+
+      await fetchTournament();
+    },
+    [fetchTournament],
+  );
+
   const stats = useMemo(() => {
     const completedMatches = data.matches.filter((match) => match.completed).length;
     const totalMatches = data.matches.length;
@@ -188,5 +308,8 @@ export function useTournament() {
     refresh: fetchTournament,
     saveScore,
     resetTournament,
+    initializePlayoffs,
+    savePlayoffScore,
+    saveFinalScore,
   };
 }

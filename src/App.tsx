@@ -8,6 +8,7 @@ import {
   Loader2,
   LogOut,
   Medal,
+  Play,
   Radio,
   RotateCcw,
   Save,
@@ -20,20 +21,29 @@ import { isSupabaseConfigured } from "./lib/supabase";
 import {
   TOTAL_ROUNDS,
   formatTeam,
+  formatPlayoffTeam,
   getMatchOutcome,
   getRestingPlayers,
+  isValidCappedScore,
   rankingScore,
 } from "./lib/tournament";
 import { useHashRoute } from "./hooks/useHashRoute";
 import { useTournament } from "./hooks/useTournament";
-import type { HydratedMatch, Player, Standing } from "./types";
+import type {
+  FinalFormat,
+  HydratedMatch,
+  HydratedPlayoffMatch,
+  Player,
+  Standing,
+} from "./types";
 
-type AppRoute = "home" | "schedule" | "scoring" | "rankings" | "player";
+type AppRoute = "home" | "schedule" | "scoring" | "playoffs" | "rankings" | "player";
 
 const navItems = [
   { label: "Home", href: "#/", route: "home", icon: Activity },
   { label: "Schedule", href: "#/schedule", route: "schedule", icon: CalendarDays },
   { label: "Scoring", href: "#/scoring", route: "scoring", icon: ClipboardList },
+  { label: "Playoffs", href: "#/playoffs", route: "playoffs", icon: Play },
   { label: "Rankings", href: "#/rankings", route: "rankings", icon: Trophy },
 ] as const;
 
@@ -46,6 +56,7 @@ function parseRoute(route: string): { page: AppRoute; playerId?: string } {
 
   if (route === "/schedule") return { page: "schedule" };
   if (route === "/scoring") return { page: "scoring" };
+  if (route === "/playoffs") return { page: "playoffs" };
   if (route === "/rankings") return { page: "rankings" };
   return { page: "home" };
 }
@@ -140,7 +151,7 @@ export default function App() {
             </div>
           </div>
 
-          <nav className="grid grid-cols-4 gap-2" aria-label="Primary navigation">
+          <nav className="grid grid-cols-5 gap-2" aria-label="Primary navigation">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeRoute.page === item.route;
@@ -210,6 +221,17 @@ export default function App() {
             ) : null}
             {activeRoute.page === "rankings" ? (
               <RankingsPage standings={tournament.standings} />
+            ) : null}
+            {activeRoute.page === "playoffs" ? (
+              <PlayoffsPage
+                adminPassword={adminPassword}
+                isAdmin={isAdmin}
+                onInitializePlayoffs={tournament.initializePlayoffs}
+                onSaveFinalScore={tournament.saveFinalScore}
+                onSavePlayoffScore={tournament.savePlayoffScore}
+                playoffMatches={tournament.playoffMatches}
+                standings={tournament.standings}
+              />
             ) : null}
             {activeRoute.page === "player" ? (
               <PlayerPage
@@ -577,6 +599,193 @@ function ScoringPage({
   );
 }
 
+function PlayoffsPage({
+  adminPassword,
+  isAdmin,
+  onInitializePlayoffs,
+  onSaveFinalScore,
+  onSavePlayoffScore,
+  playoffMatches,
+  standings,
+}: {
+  adminPassword: string;
+  isAdmin: boolean;
+  onInitializePlayoffs: (adminPassword: string) => Promise<void>;
+  onSaveFinalScore: (
+    playoffMatchId: string,
+    finalFormat: FinalFormat,
+    sets: Array<[number, number]>,
+    adminPassword: string,
+  ) => Promise<void>;
+  onSavePlayoffScore: (
+    playoffMatchId: string,
+    scoreA: number,
+    scoreB: number,
+    adminPassword: string,
+  ) => Promise<void>;
+  playoffMatches: HydratedPlayoffMatch[];
+  standings: Array<Standing & { player: Player }>;
+}) {
+  const [isCreating, setIsCreating] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const mensTop4 = standings
+    .filter((standing) => standing.player.gender === "men")
+    .slice(0, 4);
+  const womensTop4 = standings
+    .filter((standing) => standing.player.gender === "women")
+    .slice(0, 4);
+  const semiMatches = playoffMatches.filter((match) => match.stage === "semi");
+  const finalMatch = playoffMatches.find((match) => match.stage === "final");
+
+  async function createPlayoffs() {
+    if (!isAdmin) {
+      setMessage("Unlock admin mode first.");
+      return;
+    }
+
+    setIsCreating(true);
+    setMessage(null);
+
+    try {
+      await onInitializePlayoffs(adminPassword);
+      setMessage("Semis created from the current top 4.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not create playoffs.");
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      <PageTitle
+        icon={Play}
+        title="Playoffs"
+        subtitle="Top 4 men and top 4 women pair by seed. 1 vs 4, 2 vs 3."
+      />
+
+      <section className="poster-surface rounded-md p-5 shadow-court">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <SectionHeader icon={Medal} title="Projected Seeds" />
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <SeedList title="Men" standings={mensTop4} />
+              <SeedList title="Women" standings={womensTop4} />
+            </div>
+          </div>
+          <div className="w-full max-w-sm rounded-md bg-black p-4 text-white">
+            <p className="text-sm font-black uppercase text-yellow-300">
+              Playoff Setup
+            </p>
+            <p className="mt-2 text-sm font-semibold text-zinc-200">
+              Creates Team 1 through Team 4 from the current rankings. Recreate only
+              after group scores are final.
+            </p>
+            <button
+              type="button"
+              onClick={() => void createPlayoffs()}
+              disabled={!isAdmin || isCreating}
+              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isCreating ? (
+                <Loader2 className="animate-spin" size={18} aria-hidden="true" />
+              ) : (
+                <Play size={18} aria-hidden="true" />
+              )}
+              Create Semis
+            </button>
+            {message ? (
+              <p className="mt-3 text-sm font-bold text-yellow-100" role="status">
+                {message}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="poster-surface rounded-md p-5 shadow-court">
+        <SectionHeader icon={ClipboardList} title="Semifinals" />
+        <p className="mt-2 text-sm font-bold text-zinc-700">
+          Semis are first to 21, win by 2, capped at 24.
+        </p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {semiMatches.length === 0 ? (
+            <EmptyPlayoffState text="Create semis after group matches are complete." />
+          ) : (
+            semiMatches.map((match) => (
+              <PlayoffScoreCard
+                key={match.id}
+                adminPassword={adminPassword}
+                isAdmin={isAdmin}
+                match={match}
+                onSavePlayoffScore={onSavePlayoffScore}
+              />
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="poster-surface rounded-md p-5 shadow-court">
+        <SectionHeader icon={Trophy} title="Final" />
+        <p className="mt-2 text-sm font-bold text-zinc-700">
+          Choose one game to 21, or best of 3: first two sets to 21 and third set to
+          15.
+        </p>
+        <div className="mt-4">
+          {finalMatch ? (
+            <FinalScoreCard
+              adminPassword={adminPassword}
+              isAdmin={isAdmin}
+              match={finalMatch}
+              onSaveFinalScore={onSaveFinalScore}
+            />
+          ) : (
+            <EmptyPlayoffState text="The final appears after both semifinals are saved." />
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SeedList({
+  title,
+  standings,
+}: {
+  title: string;
+  standings: Array<Standing & { player: Player }>;
+}) {
+  return (
+    <div className="rounded-md border border-yellow-900/15 bg-white/70 p-3">
+      <h3 className="text-sm font-black uppercase text-zinc-600">{title}</h3>
+      <div className="mt-2 space-y-2">
+        {standings.map((standing, index) => (
+          <div
+            key={standing.player_id}
+            className="grid grid-cols-[34px_1fr_auto] items-center gap-2"
+          >
+            <span className="grid h-7 w-7 place-items-center rounded-sm bg-black text-xs font-black text-yellow-300">
+              {index + 1}
+            </span>
+            <span className="font-black text-black">{standing.player.name}</span>
+            <span className="text-sm font-black text-yellow-700">
+              {rankingScore(standing).toFixed(2)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EmptyPlayoffState({ text }: { text: string }) {
+  return (
+    <div className="rounded-md border border-dashed border-yellow-900/25 bg-white/60 p-4 text-sm font-bold text-zinc-700">
+      {text}
+    </div>
+  );
+}
+
 function RankingsPage({
   standings,
 }: {
@@ -848,14 +1057,7 @@ function ScoreCard({
 
   const parsedA = Number(scoreA);
   const parsedB = Number(scoreB);
-  const canSave =
-    scoreA.trim() !== "" &&
-    scoreB.trim() !== "" &&
-    Number.isInteger(parsedA) &&
-    Number.isInteger(parsedB) &&
-    parsedA >= 0 &&
-    parsedB >= 0 &&
-    parsedA !== parsedB;
+  const canSave = isValidCappedScore(parsedA, parsedB, 15, 18);
 
   async function handleSave() {
     if (!isAdmin) {
@@ -864,7 +1066,7 @@ function ScoreCard({
     }
 
     if (!canSave) {
-      setMessage("Enter two non-tied whole-number scores.");
+      setMessage("Group games must be to 15, win by 2, max 18.");
       return;
     }
 
@@ -936,6 +1138,272 @@ function ScoreCard({
         </p>
       ) : null}
     </article>
+  );
+}
+
+function PlayoffScoreCard({
+  adminPassword,
+  isAdmin,
+  match,
+  onSavePlayoffScore,
+}: {
+  adminPassword: string;
+  isAdmin: boolean;
+  match: HydratedPlayoffMatch;
+  onSavePlayoffScore: (
+    playoffMatchId: string,
+    scoreA: number,
+    scoreB: number,
+    adminPassword: string,
+  ) => Promise<void>;
+}) {
+  const [scoreA, setScoreA] = useState(match.score_a?.toString() ?? "");
+  const [scoreB, setScoreB] = useState(match.score_b?.toString() ?? "");
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setScoreA(match.score_a?.toString() ?? "");
+    setScoreB(match.score_b?.toString() ?? "");
+  }, [match.score_a, match.score_b]);
+
+  const parsedA = Number(scoreA);
+  const parsedB = Number(scoreB);
+  const canSave = isValidCappedScore(parsedA, parsedB, 21, 24);
+
+  async function handleSave() {
+    if (!isAdmin) {
+      setMessage("Unlock admin mode to save playoff scores.");
+      return;
+    }
+
+    if (!canSave) {
+      setMessage("Semis must be to 21, win by 2, max 24.");
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      await onSavePlayoffScore(match.id, parsedA, parsedB, adminPassword);
+      setMessage("Saved live.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Score was not saved.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <article className="poster-card rounded-md p-4 text-white">
+      <div className="relative z-10 mb-4 flex items-center justify-between gap-3">
+        <span className="rounded-sm bg-yellow-400 px-3 py-1 text-sm font-black uppercase text-black">
+          Semi {match.match_number}
+        </span>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-black">
+          {match.completed ? "Completed" : "Open"}
+        </span>
+      </div>
+      <ScoreInput
+        label={`Team ${match.team_a_seed ?? "A"}`}
+        readOnly={!isAdmin || !match.teamA || !match.teamB}
+        team={formatPlayoffTeam(match, "A")}
+        value={scoreA}
+        onChange={setScoreA}
+      />
+      <div className="relative z-10 my-3 h-px bg-yellow-400/20" />
+      <ScoreInput
+        label={`Team ${match.team_b_seed ?? "B"}`}
+        readOnly={!isAdmin || !match.teamA || !match.teamB}
+        team={formatPlayoffTeam(match, "B")}
+        value={scoreB}
+        onChange={setScoreB}
+      />
+      <button
+        type="button"
+        onClick={() => void handleSave()}
+        disabled={isSaving || !isAdmin || !match.teamA || !match.teamB}
+        className="relative z-10 mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isSaving ? (
+          <Loader2 className="animate-spin" size={18} aria-hidden="true" />
+        ) : (
+          <Save size={18} aria-hidden="true" />
+        )}
+        Save Semi
+      </button>
+      {message ? (
+        <p className="relative z-10 mt-3 text-sm font-black uppercase text-yellow-100" role="status">
+          {message}
+        </p>
+      ) : null}
+    </article>
+  );
+}
+
+function FinalScoreCard({
+  adminPassword,
+  isAdmin,
+  match,
+  onSaveFinalScore,
+}: {
+  adminPassword: string;
+  isAdmin: boolean;
+  match: HydratedPlayoffMatch;
+  onSaveFinalScore: (
+    playoffMatchId: string,
+    finalFormat: FinalFormat,
+    sets: Array<[number, number]>,
+    adminPassword: string,
+  ) => Promise<void>;
+}) {
+  const [format, setFormat] = useState<FinalFormat>(match.final_format);
+  const [scores, setScores] = useState([
+    [match.set1_a?.toString() ?? match.score_a?.toString() ?? "", match.set1_b?.toString() ?? match.score_b?.toString() ?? ""],
+    [match.set2_a?.toString() ?? "", match.set2_b?.toString() ?? ""],
+    [match.set3_a?.toString() ?? "", match.set3_b?.toString() ?? ""],
+  ]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFormat(match.final_format);
+    setScores([
+      [match.set1_a?.toString() ?? match.score_a?.toString() ?? "", match.set1_b?.toString() ?? match.score_b?.toString() ?? ""],
+      [match.set2_a?.toString() ?? "", match.set2_b?.toString() ?? ""],
+      [match.set3_a?.toString() ?? "", match.set3_b?.toString() ?? ""],
+    ]);
+  }, [
+    match.final_format,
+    match.score_a,
+    match.score_b,
+    match.set1_a,
+    match.set1_b,
+    match.set2_a,
+    match.set2_b,
+    match.set3_a,
+    match.set3_b,
+  ]);
+
+  function updateSet(index: number, side: 0 | 1, value: string) {
+    setScores((current) =>
+      current.map((set, setIndex) =>
+        setIndex === index
+          ? set.map((score, scoreIndex) => (scoreIndex === side ? value : score))
+          : set,
+      ),
+    );
+  }
+
+  async function handleSave() {
+    if (!isAdmin) {
+      setMessage("Unlock admin mode to save final scores.");
+      return;
+    }
+
+    const parsedSets = scores.map(([a, b]) => [Number(a), Number(b)] as [number, number]);
+    const bestOfThreeDoneInTwo = setsWon(parsedSets.slice(0, 2)) === 2;
+    const requiredSets =
+      format === "single_21"
+        ? parsedSets.slice(0, 1)
+        : bestOfThreeDoneInTwo
+          ? parsedSets.slice(0, 2)
+          : parsedSets;
+    const valid =
+      format === "single_21"
+        ? isValidCappedScore(requiredSets[0][0], requiredSets[0][1], 21, 24)
+        : isValidCappedScore(parsedSets[0][0], parsedSets[0][1], 21, 24) &&
+          isValidCappedScore(parsedSets[1][0], parsedSets[1][1], 21, 24) &&
+          (bestOfThreeDoneInTwo ||
+            isValidCappedScore(parsedSets[2][0], parsedSets[2][1], 15, 18));
+
+    if (!valid) {
+      setMessage("Final scores do not match the selected format.");
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      await onSaveFinalScore(match.id, format, requiredSets, adminPassword);
+      setMessage("Final saved live.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Final was not saved.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <article className="poster-card rounded-md p-4 text-white">
+      <div className="relative z-10 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-black uppercase text-yellow-300">Final</p>
+          <p className="font-black">{formatPlayoffTeam(match, "A")} vs {formatPlayoffTeam(match, "B")}</p>
+        </div>
+        <select
+          className="h-10 rounded-sm border border-yellow-400/40 bg-black px-3 text-sm font-black text-white"
+          disabled={!isAdmin}
+          value={format}
+          onChange={(event) => setFormat(event.target.value as FinalFormat)}
+        >
+          <option value="single_21">One game to 21</option>
+          <option value="best_of_3">Best of 3</option>
+        </select>
+      </div>
+
+      <div className="relative z-10 grid gap-3">
+        {(format === "single_21" ? [0] : [0, 1, 2]).map((setIndex) => (
+          <div key={setIndex} className="grid grid-cols-[1fr_70px_70px] items-center gap-2">
+            <span className="text-sm font-black uppercase text-yellow-300">
+              {format === "single_21" ? "Game" : `Set ${setIndex + 1}`}
+            </span>
+            <input
+              className="h-11 rounded-sm border border-yellow-400/40 bg-white px-2 text-center font-black text-black"
+              readOnly={!isAdmin || !match.teamA || !match.teamB}
+              type="number"
+              value={scores[setIndex][0]}
+              onChange={(event) => updateSet(setIndex, 0, event.target.value)}
+            />
+            <input
+              className="h-11 rounded-sm border border-yellow-400/40 bg-white px-2 text-center font-black text-black"
+              readOnly={!isAdmin || !match.teamA || !match.teamB}
+              type="number"
+              value={scores[setIndex][1]}
+              onChange={(event) => updateSet(setIndex, 1, event.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void handleSave()}
+        disabled={isSaving || !isAdmin || !match.teamA || !match.teamB}
+        className="relative z-10 mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isSaving ? (
+          <Loader2 className="animate-spin" size={18} aria-hidden="true" />
+        ) : (
+          <Save size={18} aria-hidden="true" />
+        )}
+        Save Final
+      </button>
+      {message ? (
+        <p className="relative z-10 mt-3 text-sm font-black uppercase text-yellow-100" role="status">
+          {message}
+        </p>
+      ) : null}
+    </article>
+  );
+}
+
+function setsWon(sets: Array<[number, number]>) {
+  return Math.max(
+    sets.filter(([a, b]) => a > b).length,
+    sets.filter(([a, b]) => b > a).length,
   );
 }
 

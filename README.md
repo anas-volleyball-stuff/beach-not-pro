@@ -47,6 +47,16 @@ Rankings are calculated in the app with:
 Admin mode is unlocked in the app with the event password. Admins can save score
 changes and reset the tournament back to an unplayed state.
 
+Playoffs use the top 4 men and top 4 women after group play. Seed 1 pairs with
+seed 1, seed 2 with seed 2, and so on. Team 1 plays Team 4, Team 2 plays Team 3,
+and semifinal winners advance to the final.
+
+Score rules:
+
+- Group games: first to 15, win by 2, capped at 18.
+- Semifinals: first to 21, win by 2, capped at 24.
+- Final: one game to 21, or best of 3 with first two sets to 21 and third set to 15.
+
 ## Realtime
 
 The app subscribes to Supabase Realtime changes for:
