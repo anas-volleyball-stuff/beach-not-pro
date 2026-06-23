@@ -6,7 +6,7 @@ This project deploys through GitHub Actions using `.github/workflows/deploy.yml`
 
 In GitHub, open the repository settings for:
 
-`anas-volleyball-stuff/beach-not-pro-tour`
+`anas-volleyball-stuff/beach-not-pro`
 
 Then set:
 
@@ -29,5 +29,5 @@ Push to `main`, or open Actions and run `Deploy to GitHub Pages` manually.
 The live URL will be:
 
 ```bash
-https://anas-volleyball-stuff.github.io/beach-not-pro-tour/
+https://anas-volleyball-stuff.github.io/beach-not-pro/
 ```
