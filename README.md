@@ -38,6 +38,9 @@ The migration creates and seeds:
 
 Scores are saved through the `save_match_score` database function. Database triggers recalculate standings and advance `current_round` to the lowest incomplete round.
 
+Admin mode is unlocked in the app with the event password. Admins can save score
+changes and reset the tournament back to an unplayed state.
+
 ## Realtime
 
 The app subscribes to Supabase Realtime changes for:

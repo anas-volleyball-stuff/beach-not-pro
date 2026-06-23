@@ -121,7 +121,8 @@ execute function public.after_match_change();
 create or replace function public.save_match_score(
   p_match_id uuid,
   p_score_a integer,
-  p_score_b integer
+  p_score_b integer,
+  p_admin_password text
 )
 returns public.matches
 language plpgsql
@@ -131,6 +132,10 @@ as $$
 declare
   saved_match public.matches;
 begin
+  if p_admin_password is distinct from 'hihi' then
+    raise exception 'Admin password is required.';
+  end if;
+
   if p_score_a is null or p_score_b is null then
     raise exception 'Both team scores are required.';
   end if;
@@ -156,5 +161,31 @@ begin
   end if;
 
   return saved_match;
+end;
+$$;
+
+create or replace function public.reset_tournament(p_admin_password text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_admin_password is distinct from 'hihi' then
+    raise exception 'Admin password is required.';
+  end if;
+
+  update public.matches
+  set
+    score_a = null,
+    score_b = null,
+    completed = false;
+
+  update public.tournament_state
+  set current_round = 1
+  where id = 1;
+
+  perform public.recalculate_player_standings();
+  perform public.sync_current_round();
 end;
 $$;

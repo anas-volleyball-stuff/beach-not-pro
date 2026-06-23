@@ -113,7 +113,8 @@ grant select on public.players to anon, authenticated;
 grant select on public.matches to anon, authenticated;
 grant select on public.tournament_state to anon, authenticated;
 grant select on public.player_standings to anon, authenticated;
-grant execute on function public.save_match_score(uuid, integer, integer) to anon, authenticated;
+grant execute on function public.save_match_score(uuid, integer, integer, text) to anon, authenticated;
+grant execute on function public.reset_tournament(text) to anon, authenticated;
 
 do $$
 declare

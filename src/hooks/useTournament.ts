@@ -121,7 +121,12 @@ export function useTournament() {
   }, [fetchTournament]);
 
   const saveScore = useCallback(
-    async (matchId: string, scoreA: number, scoreB: number) => {
+    async (
+      matchId: string,
+      scoreA: number,
+      scoreB: number,
+      adminPassword: string,
+    ) => {
       if (!supabase) {
         throw new Error("Supabase is not configured yet.");
       }
@@ -130,6 +135,26 @@ export function useTournament() {
         p_match_id: matchId,
         p_score_a: scoreA,
         p_score_b: scoreB,
+        p_admin_password: adminPassword,
+      });
+
+      if (rpcError) {
+        throw new Error(rpcError.message);
+      }
+
+      await fetchTournament();
+    },
+    [fetchTournament],
+  );
+
+  const resetTournament = useCallback(
+    async (adminPassword: string) => {
+      if (!supabase) {
+        throw new Error("Supabase is not configured yet.");
+      }
+
+      const { error: rpcError } = await supabase.rpc("reset_tournament", {
+        p_admin_password: adminPassword,
       });
 
       if (rpcError) {
@@ -162,5 +187,6 @@ export function useTournament() {
     lastUpdated,
     refresh: fetchTournament,
     saveScore,
+    resetTournament,
   };
 }

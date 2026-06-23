@@ -4,9 +4,12 @@ import {
   CheckCircle2,
   CircleDot,
   ClipboardList,
+  LockKeyhole,
   Loader2,
+  LogOut,
   Medal,
   Radio,
+  RotateCcw,
   Save,
   Trophy,
   UserRound,
@@ -59,6 +62,10 @@ export default function App() {
   const activeRoute = parseRoute(route);
   const tournament = useTournament();
   const currentRound = tournament.tournamentState?.current_round ?? 1;
+  const [adminPassword, setAdminPassword] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminMessage, setAdminMessage] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   const currentMatches = useMemo(
     () =>
@@ -68,6 +75,44 @@ export default function App() {
 
   if (!isSupabaseConfigured) {
     return <SetupRequired />;
+  }
+
+  function unlockAdmin() {
+    if (adminPassword === "hihi") {
+      setIsAdmin(true);
+      setAdminMessage("Admin mode unlocked.");
+      return;
+    }
+
+    setIsAdmin(false);
+    setAdminMessage("Wrong password.");
+  }
+
+  function lockAdmin() {
+    setIsAdmin(false);
+    setAdminPassword("");
+    setAdminMessage("Admin mode locked.");
+  }
+
+  async function resetTournament() {
+    if (!isAdmin) {
+      setAdminMessage("Unlock admin mode first.");
+      return;
+    }
+
+    setIsResetting(true);
+    setAdminMessage(null);
+
+    try {
+      await tournament.resetTournament(adminPassword);
+      setAdminMessage("Tournament reset to 0-0.");
+    } catch (resetError) {
+      setAdminMessage(
+        resetError instanceof Error ? resetError.message : "Reset failed.",
+      );
+    } finally {
+      setIsResetting(false);
+    }
   }
 
   return (
@@ -115,6 +160,17 @@ export default function App() {
               );
             })}
           </nav>
+
+          <AdminControls
+            adminMessage={adminMessage}
+            adminPassword={adminPassword}
+            isAdmin={isAdmin}
+            isResetting={isResetting}
+            onAdminPasswordChange={setAdminPassword}
+            onLock={lockAdmin}
+            onReset={() => void resetTournament()}
+            onUnlock={unlockAdmin}
+          />
         </div>
       </header>
 
@@ -144,7 +200,9 @@ export default function App() {
             ) : null}
             {activeRoute.page === "scoring" ? (
               <ScoringPage
+                adminPassword={adminPassword}
                 currentRound={currentRound}
+                isAdmin={isAdmin}
                 matches={tournament.matches}
                 onSaveScore={tournament.saveScore}
               />
@@ -163,6 +221,94 @@ export default function App() {
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+function AdminControls({
+  adminMessage,
+  adminPassword,
+  isAdmin,
+  isResetting,
+  onAdminPasswordChange,
+  onLock,
+  onReset,
+  onUnlock,
+}: {
+  adminMessage: string | null;
+  adminPassword: string;
+  isAdmin: boolean;
+  isResetting: boolean;
+  onAdminPasswordChange: (value: string) => void;
+  onLock: () => void;
+  onReset: () => void;
+  onUnlock: () => void;
+}) {
+  return (
+    <div className="rounded-md border border-yellow-400/20 bg-white/5 p-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-sm font-black uppercase text-yellow-100">
+          <LockKeyhole size={17} className="text-yellow-300" aria-hidden="true" />
+          <span>{isAdmin ? "Admin mode on" : "Admin mode"}</span>
+        </div>
+
+        {isAdmin ? (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={onReset}
+              disabled={isResetting}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 text-sm font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+              title="Reset tournament"
+            >
+              {isResetting ? (
+                <Loader2 className="animate-spin" size={16} aria-hidden="true" />
+              ) : (
+                <RotateCcw size={16} aria-hidden="true" />
+              )}
+              Reset Game
+            </button>
+            <button
+              type="button"
+              onClick={onLock}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm border border-white/15 px-4 py-2 text-sm font-black uppercase text-white transition hover:border-yellow-300/70 hover:text-yellow-100"
+              title="Lock admin mode"
+            >
+              <LogOut size={16} aria-hidden="true" />
+              Lock
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-[180px_auto]">
+            <input
+              className="h-10 rounded-sm border border-white/15 bg-black px-3 text-sm font-bold text-white placeholder:text-zinc-500"
+              type="password"
+              value={adminPassword}
+              onChange={(event) => onAdminPasswordChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") onUnlock();
+              }}
+              placeholder="Password"
+              aria-label="Admin password"
+            />
+            <button
+              type="button"
+              onClick={onUnlock}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 text-sm font-black uppercase text-black transition hover:bg-yellow-300"
+              title="Unlock admin mode"
+            >
+              <LockKeyhole size={16} aria-hidden="true" />
+              Unlock
+            </button>
+          </div>
+        )}
+      </div>
+
+      {adminMessage ? (
+        <p className="mt-2 text-sm font-bold text-yellow-100" role="status">
+          {adminMessage}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -372,20 +518,33 @@ function SchedulePage({
 }
 
 function ScoringPage({
+  adminPassword,
   currentRound,
+  isAdmin,
   matches,
   onSaveScore,
 }: {
+  adminPassword: string;
   currentRound: number;
+  isAdmin: boolean;
   matches: HydratedMatch[];
-  onSaveScore: (matchId: string, scoreA: number, scoreB: number) => Promise<void>;
+  onSaveScore: (
+    matchId: string,
+    scoreA: number,
+    scoreB: number,
+    adminPassword: string,
+  ) => Promise<void>;
 }) {
   return (
     <div className="space-y-5">
       <PageTitle
         icon={ClipboardList}
         title="Live Scoring"
-        subtitle="Saved scores update Supabase, rankings, standings, and every open browser."
+        subtitle={
+          isAdmin
+            ? "Admin mode is on. Saved scores update every open browser."
+            : "Unlock admin mode above to change scores."
+        }
       />
       {Array.from({ length: TOTAL_ROUNDS }, (_, index) => index + 1).map((round) => (
         <section
@@ -402,7 +561,13 @@ function ScoringPage({
             {matches
               .filter((match) => match.round_number === round)
               .map((match) => (
-                <ScoreCard key={match.id} match={match} onSaveScore={onSaveScore} />
+                <ScoreCard
+                  key={match.id}
+                  adminPassword={adminPassword}
+                  isAdmin={isAdmin}
+                  match={match}
+                  onSaveScore={onSaveScore}
+                />
               ))}
           </div>
         </section>
@@ -651,11 +816,20 @@ function PlayerPage({
 }
 
 function ScoreCard({
+  adminPassword,
+  isAdmin,
   match,
   onSaveScore,
 }: {
+  adminPassword: string;
+  isAdmin: boolean;
   match: HydratedMatch;
-  onSaveScore: (matchId: string, scoreA: number, scoreB: number) => Promise<void>;
+  onSaveScore: (
+    matchId: string,
+    scoreA: number,
+    scoreB: number,
+    adminPassword: string,
+  ) => Promise<void>;
 }) {
   const [scoreA, setScoreA] = useState(match.score_a?.toString() ?? "");
   const [scoreB, setScoreB] = useState(match.score_b?.toString() ?? "");
@@ -679,6 +853,11 @@ function ScoreCard({
     parsedA !== parsedB;
 
   async function handleSave() {
+    if (!isAdmin) {
+      setMessage("Unlock admin mode to save scores.");
+      return;
+    }
+
     if (!canSave) {
       setMessage("Enter two non-tied whole-number scores.");
       return;
@@ -688,7 +867,7 @@ function ScoreCard({
     setMessage(null);
 
     try {
-      await onSaveScore(match.id, parsedA, parsedB);
+      await onSaveScore(match.id, parsedA, parsedB, adminPassword);
       setMessage("Saved live.");
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "Score was not saved.");
@@ -720,6 +899,7 @@ function ScoreCard({
         team={formatTeam(match, "A")}
         value={scoreA}
         onChange={setScoreA}
+        readOnly={!isAdmin}
       />
       <div className="relative z-10 my-3 h-px bg-yellow-400/20" />
       <ScoreInput
@@ -727,12 +907,13 @@ function ScoreCard({
         team={formatTeam(match, "B")}
         value={scoreB}
         onChange={setScoreB}
+        readOnly={!isAdmin}
       />
 
       <button
         type="button"
         onClick={() => void handleSave()}
-        disabled={isSaving}
+        disabled={isSaving || !isAdmin}
         className="relative z-10 mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
         title="Save score"
       >
@@ -741,7 +922,7 @@ function ScoreCard({
         ) : (
           <Save size={18} aria-hidden="true" />
         )}
-        Save
+        {isAdmin ? "Save" : "Admin Locked"}
       </button>
 
       {message ? (
@@ -755,11 +936,13 @@ function ScoreCard({
 
 function ScoreInput({
   label,
+  readOnly,
   team,
   value,
   onChange,
 }: {
   label: string;
+  readOnly: boolean;
   team: string;
   value: string;
   onChange: (value: string) => void;
@@ -776,6 +959,7 @@ function ScoreInput({
         className="h-12 w-full rounded-sm border border-yellow-400/40 bg-white px-3 text-center text-xl font-black text-black"
         inputMode="numeric"
         min={0}
+        readOnly={readOnly}
         type="number"
         value={value}
         onChange={(event) => onChange(event.target.value)}

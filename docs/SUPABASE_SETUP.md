@@ -25,15 +25,22 @@ run the dashboard setup chunks instead, in this exact order:
 Use a blank SQL Editor query for each chunk and run the full contents of that
 chunk before moving to the next one.
 
+For an existing database that was set up before admin mode was added, run:
+
+`supabase/dashboard-setup/05_admin_functions_update.sql`
+
 ## Reset the Tournament
 
-To start the tournament fresh without changing the fixed players or schedule,
-run:
+To start the tournament fresh from Supabase SQL Editor without changing the fixed
+players or schedule, run:
 
 `supabase/dashboard-setup/04_reset_tournament.sql`
 
 That clears all saved scores, marks every match open, resets the current round to
 Round 1, and recalculates standings back to zero.
+
+You can also do the same thing inside the app by unlocking Admin Mode with the
+password and pressing **Reset Game**.
 
 ## 3. Confirm Realtime
 
