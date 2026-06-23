@@ -251,7 +251,8 @@ begin
   set
     score_a = null,
     score_b = null,
-    completed = false;
+    completed = false
+  where true;
 
   update public.tournament_state
   set current_round = 1
