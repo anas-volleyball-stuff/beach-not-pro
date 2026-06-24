@@ -9,7 +9,6 @@ import {
   LogOut,
   Medal,
   Play,
-  Radio,
   RotateCcw,
   Save,
   Trophy,
@@ -145,10 +144,6 @@ export default function App() {
                 </span>
               </span>
             </a>
-            <div className="poster-pill flex items-center gap-2 rounded-full px-3 py-2 text-sm font-black uppercase">
-              <Radio size={16} className="text-yellow-300" aria-hidden="true" />
-              <span>Live via Supabase</span>
-            </div>
           </div>
 
           <nav className="grid grid-cols-5 gap-2" aria-label="Primary navigation">
@@ -198,6 +193,10 @@ export default function App() {
                 currentMatches={currentMatches}
                 completedMatches={tournament.completedMatches}
                 totalMatches={tournament.totalMatches}
+                groupCompletedMatches={tournament.groupCompletedMatches}
+                groupTotalMatches={tournament.groupTotalMatches}
+                playoffCompletedMatches={tournament.playoffCompletedMatches}
+                playoffTotalMatches={tournament.playoffTotalMatches}
                 progress={tournament.progress}
                 standings={tournament.standings}
                 lastUpdated={tournament.lastUpdated}
@@ -383,7 +382,11 @@ function HomePage({
   currentMatches,
   completedMatches,
   totalMatches,
+  groupCompletedMatches,
+  groupTotalMatches,
   progress,
+  playoffCompletedMatches,
+  playoffTotalMatches,
   standings,
   lastUpdated,
 }: {
@@ -391,17 +394,18 @@ function HomePage({
   currentMatches: HydratedMatch[];
   completedMatches: number;
   totalMatches: number;
+  groupCompletedMatches: number;
+  groupTotalMatches: number;
   progress: number;
+  playoffCompletedMatches: number;
+  playoffTotalMatches: number;
   standings: Array<Standing & { player: Player }>;
   lastUpdated: Date | null;
 }) {
   return (
     <div className="space-y-5">
       <section className="poster-hero rounded-md shadow-court">
-        <div className="poster-hero-media" aria-hidden="true">
-          <img src={posterAssetUrl} alt="" />
-        </div>
-        <div className="relative z-10 grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_320px] lg:p-8">
+        <div className="relative z-10 grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_320px_300px] lg:p-8">
           <div>
             <div className="poster-pill mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-black uppercase">
               <CircleDot size={15} className="text-yellow-300" aria-hidden="true" />
@@ -439,6 +443,19 @@ function HomePage({
             <p className="mt-4 text-sm font-black uppercase text-zinc-600">
               Last synced {lastUpdated ? lastUpdated.toLocaleTimeString() : "just now"}
             </p>
+            <div className="mt-4 grid gap-2 text-sm font-black uppercase text-zinc-700">
+              <div className="flex justify-between gap-3">
+                <span>Groups</span>
+                <span>{groupCompletedMatches}/{groupTotalMatches}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>Playoffs</span>
+                <span>{playoffCompletedMatches}/{playoffTotalMatches}</span>
+              </div>
+            </div>
+          </div>
+          <div className="poster-showcase self-stretch">
+            <img src={posterAssetUrl} alt="Beach Not Pro Tour poster" />
           </div>
         </div>
       </section>

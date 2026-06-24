@@ -287,17 +287,27 @@ export function useTournament() {
   );
 
   const stats = useMemo(() => {
-    const completedMatches = data.matches.filter((match) => match.completed).length;
-    const totalMatches = data.matches.length;
+    const groupCompletedMatches = data.matches.filter((match) => match.completed).length;
+    const groupTotalMatches = data.matches.length;
+    const playoffTotalMatches = data.playoffMatches.length;
+    const playoffCompletedMatches = data.playoffMatches.filter(
+      (match) => match.completed,
+    ).length;
+    const completedMatches = groupCompletedMatches + playoffCompletedMatches;
+    const totalMatches = groupTotalMatches + playoffTotalMatches;
     const progress =
       totalMatches === 0 ? 0 : Math.round((completedMatches / totalMatches) * 100);
 
     return {
       completedMatches,
+      groupCompletedMatches,
+      groupTotalMatches,
+      playoffCompletedMatches,
+      playoffTotalMatches,
       totalMatches,
       progress,
     };
-  }, [data.matches]);
+  }, [data.matches, data.playoffMatches]);
 
   return {
     ...data,
