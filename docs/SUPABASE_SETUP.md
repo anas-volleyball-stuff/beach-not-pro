@@ -33,6 +33,13 @@ To add the semifinals/final playoff phase and scoring rules, run:
 
 `supabase/dashboard-setup/06_playoffs_setup.sql`
 
+To apply the optimized regenerated group schedule to an existing database, run:
+
+`supabase/dashboard-setup/07_regenerated_schedule.sql`
+
+That clears existing group scores and removes any playoff matches because the
+group phase has changed.
+
 ## Reset the Tournament
 
 To start the tournament fresh from Supabase SQL Editor without changing the fixed
