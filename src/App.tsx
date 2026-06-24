@@ -131,22 +131,22 @@ export default function App() {
       <header className="border-b border-yellow-400/25 bg-black/95 text-white shadow-court">
         <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <a className="flex items-center gap-3" href="#/">
-              <span className="grid h-11 w-11 place-items-center rounded-sm bg-yellow-400 text-black shadow-court">
+            <a className="flex min-w-0 items-center gap-3" href="#/">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-sm bg-yellow-400 text-black shadow-court">
                 <Trophy size={22} aria-hidden="true" />
               </span>
-              <span>
-                <span className="block text-xl font-black uppercase tracking-normal sm:text-2xl">
+              <span className="min-w-0">
+                <span className="block text-xl font-black uppercase leading-tight tracking-normal sm:text-2xl">
                   Beach Not Pro Tour
                 </span>
-                <span className="text-sm font-bold uppercase text-yellow-200">
+                <span className="block text-sm font-bold uppercase leading-snug text-yellow-200">
                   Single tournament live dashboard
                 </span>
               </span>
             </a>
           </div>
 
-          <nav className="grid grid-cols-5 gap-2" aria-label="Primary navigation">
+          <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0 sm:pb-0" aria-label="Primary navigation">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeRoute.page === item.route;
@@ -155,14 +155,14 @@ export default function App() {
                   key={item.href}
                   href={item.href}
                   className={classNames(
-                    "flex min-h-12 flex-col items-center justify-center gap-1 rounded-sm border px-2 py-2 text-xs font-black uppercase transition sm:min-h-10 sm:flex-row sm:text-sm",
+                    "flex min-h-12 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-sm border px-2 py-2 text-center text-[0.68rem] font-black uppercase leading-tight transition sm:min-h-10 sm:w-auto sm:flex-row sm:text-sm",
                     isActive
                       ? "border-yellow-300 bg-yellow-400 text-black shadow-court"
                       : "border-white/10 bg-white/5 text-zinc-200 hover:border-yellow-300/70 hover:bg-yellow-400/10 hover:text-yellow-100",
                   )}
                 >
                   <Icon size={18} aria-hidden="true" />
-                  <span>{item.label}</span>
+                  <span className="max-w-full break-words">{item.label}</span>
                 </a>
               );
             })}
@@ -416,7 +416,7 @@ function HomePage({
               <span className="poster-word-gold">Not Pro</span>
               Tour
             </h1>
-            <p className="mt-4 max-w-xl text-base font-black uppercase text-zinc-100 sm:text-lg">
+            <p className="mt-4 max-w-xl text-base font-black uppercase leading-snug text-zinc-100 sm:text-lg">
               Mixed 2v2 beach volleyball tournament scoreboard.
             </p>
           </div>
@@ -1530,10 +1530,10 @@ function TeamLine({
   winner: boolean;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_auto] items-center gap-3">
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
       <span
         className={classNames(
-          "font-black tracking-normal",
+          "min-w-0 break-words font-black leading-snug tracking-normal",
           winner ? "text-yellow-500" : "text-inherit",
         )}
       >
@@ -1609,15 +1609,15 @@ function PageTitle({
   subtitle: string;
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="grid h-11 w-11 place-items-center rounded-sm bg-yellow-400 text-black shadow-court">
+    <div className="flex min-w-0 items-start gap-3">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-sm bg-yellow-400 text-black shadow-court">
         <Icon size={21} aria-hidden="true" />
       </span>
-      <div>
-        <h1 className="text-2xl font-black uppercase tracking-normal text-white sm:text-3xl">
+      <div className="min-w-0">
+        <h1 className="break-words text-2xl font-black uppercase leading-tight tracking-normal text-white sm:text-3xl">
           {title}
         </h1>
-        <p className="mt-1 text-sm font-black uppercase text-yellow-200">{subtitle}</p>
+        <p className="mt-1 break-words text-sm font-black uppercase leading-snug text-yellow-200">{subtitle}</p>
       </div>
     </div>
   );

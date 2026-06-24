@@ -133,6 +133,7 @@ input[type="number"]::-webkit-outer-spin-button {
   position: relative;
   overflow: hidden;
   min-height: 21rem;
+  aspect-ratio: 3 / 4;
   border: 4px solid #f7c313;
   border-radius: 6px;
   background: #050505;
@@ -153,9 +154,10 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .poster-showcase img {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   filter: saturate(1.05) contrast(1.08);
 }

@@ -292,20 +292,20 @@ with fixed_schedule (
   team_b_player_2
 ) as (
   values
-    (1, 1, 'Anas', 'Yvonne', 'Shehan', 'Cass'),
-    (1, 2, 'Harish', 'Sophie', 'Kang', 'Jolene'),
-    (1, 3, 'Din', 'Elif', 'Supi', 'Jing'),
-    (2, 1, 'Anas', 'Jing', 'Kang', 'Bernie'),
-    (2, 2, 'Shehan', 'Yvonne', 'Maddy', 'Elif'),
-    (2, 3, 'Din', 'Jolene', 'Supi', 'Cass'),
-    (3, 1, 'Harish', 'Cass', 'Shehan', 'Sophie'),
-    (3, 2, 'Kang', 'Elif', 'Din', 'Bernie'),
-    (3, 3, 'Maddy', 'Jing', 'Supi', 'Jolene'),
-    (4, 1, 'Anas', 'Cass', 'Harish', 'Elif'),
-    (4, 2, 'Shehan', 'Jolene', 'Supi', 'Bernie'),
-    (4, 3, 'Maddy', 'Yvonne', 'Din', 'Sophie'),
-    (5, 1, 'Anas', 'Bernie', 'Maddy', 'Sophie'),
-    (5, 2, 'Harish', 'Yvonne', 'Kang', 'Jing')
+    (1, 1, 'Din', 'Bernie', 'Maddy', 'Cass'),
+    (1, 2, 'Anas', 'Yvonne', 'Kang', 'Jolene'),
+    (1, 3, 'Supi', 'Sophie', 'Harish', 'Elif'),
+    (2, 1, 'Kang', 'Elif', 'Harish', 'Cass'),
+    (2, 2, 'Anas', 'Jolene', 'Supi', 'Bernie'),
+    (2, 3, 'Din', 'Sophie', 'Shehan', 'Jing'),
+    (3, 1, 'Din', 'Jing', 'Supi', 'Jolene'),
+    (3, 2, 'Kang', 'Yvonne', 'Shehan', 'Bernie'),
+    (3, 3, 'Anas', 'Cass', 'Maddy', 'Sophie'),
+    (4, 1, 'Din', 'Cass', 'Harish', 'Yvonne'),
+    (4, 2, 'Anas', 'Elif', 'Kang', 'Jing'),
+    (4, 3, 'Maddy', 'Jolene', 'Shehan', 'Sophie'),
+    (5, 1, 'Supi', 'Elif', 'Shehan', 'Yvonne'),
+    (5, 2, 'Maddy', 'Bernie', 'Harish', 'Jing')
 )
 insert into public.matches (
   round_number,
