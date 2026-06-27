@@ -11,6 +11,7 @@ import type {
   HydratedPlayoffMatch,
   Match,
   Player,
+  PlayoffFormat,
   PlayoffMatch,
   Standing,
   TournamentState,
@@ -209,13 +210,14 @@ export function useTournament() {
   );
 
   const initializePlayoffs = useCallback(
-    async (adminPassword: string) => {
+    async (adminPassword: string, format: PlayoffFormat) => {
       if (!supabase) {
         throw new Error("Supabase is not configured yet.");
       }
 
       const { error: rpcError } = await supabase.rpc("initialize_playoffs", {
         p_admin_password: adminPassword,
+        p_format: format,
       });
 
       if (rpcError) {

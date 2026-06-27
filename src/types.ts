@@ -45,7 +45,8 @@ export type HydratedMatch = Match & {
   teamB: MatchTeam;
 };
 
-export type PlayoffStage = "semi" | "final";
+export type PlayoffStage = "quarter" | "semi" | "final";
+export type PlayoffFormat = "semis" | "quarters";
 export type FinalFormat = "single_21" | "best_of_3";
 
 export type PlayoffMatch = {

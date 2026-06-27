@@ -33,6 +33,7 @@ import type {
   HydratedMatch,
   HydratedPlayoffMatch,
   Player,
+  PlayoffFormat,
   Standing,
 } from "./types";
 
@@ -627,7 +628,10 @@ function PlayoffsPage({
 }: {
   adminPassword: string;
   isAdmin: boolean;
-  onInitializePlayoffs: (adminPassword: string) => Promise<void>;
+  onInitializePlayoffs: (
+    adminPassword: string,
+    format: PlayoffFormat,
+  ) => Promise<void>;
   onSaveFinalScore: (
     playoffMatchId: string,
     finalFormat: FinalFormat,
@@ -645,14 +649,18 @@ function PlayoffsPage({
 }) {
   const [isCreating, setIsCreating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const mensTop4 = standings
+  const [playoffFormat, setPlayoffFormat] = useState<PlayoffFormat>("semis");
+  const seedCount = playoffFormat === "quarters" ? 7 : 4;
+  const mensSeeds = standings
     .filter((standing) => standing.player.gender === "men")
-    .slice(0, 4);
-  const womensTop4 = standings
+    .slice(0, seedCount);
+  const womensSeeds = standings
     .filter((standing) => standing.player.gender === "women")
-    .slice(0, 4);
+    .slice(0, seedCount);
+  const quarterMatches = playoffMatches.filter((match) => match.stage === "quarter");
   const semiMatches = playoffMatches.filter((match) => match.stage === "semi");
   const finalMatch = playoffMatches.find((match) => match.stage === "final");
+  const hasQuarters = quarterMatches.length > 0;
 
   async function createPlayoffs() {
     if (!isAdmin) {
@@ -664,8 +672,12 @@ function PlayoffsPage({
     setMessage(null);
 
     try {
-      await onInitializePlayoffs(adminPassword);
-      setMessage("Semis created from the current top 4.");
+      await onInitializePlayoffs(adminPassword, playoffFormat);
+      setMessage(
+        playoffFormat === "quarters"
+          ? "Quarters created from the current top 7."
+          : "Semis created from the current top 4.",
+      );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not create playoffs.");
     } finally {
@@ -678,7 +690,7 @@ function PlayoffsPage({
       <PageTitle
         icon={Play}
         title="Playoffs"
-        subtitle="Top 4 men and top 4 women pair by seed. 1 vs 4, 2 vs 3."
+        subtitle="Choose top 4 semis or top 7 quarters after group scores are final."
       />
 
       <section className="poster-surface rounded-md p-5 shadow-court">
@@ -686,8 +698,8 @@ function PlayoffsPage({
           <div>
             <SectionHeader icon={Medal} title="Projected Seeds" />
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <SeedList title="Men" standings={mensTop4} />
-              <SeedList title="Women" standings={womensTop4} />
+              <SeedList title="Men" standings={mensSeeds} />
+              <SeedList title="Women" standings={womensSeeds} />
             </div>
           </div>
           <div className="w-full max-w-sm rounded-md bg-black p-4 text-white">
@@ -695,9 +707,51 @@ function PlayoffsPage({
               Playoff Setup
             </p>
             <p className="mt-2 text-sm font-semibold text-zinc-200">
-              Creates Team 1 through Team 4 from the current rankings. Recreate only
-              after group scores are final.
+              Creates seeded mixed teams from the current rankings. Recreate only
+              after group scores are final. Existing playoff scores will be cleared.
             </p>
+            <div className="mt-4 grid gap-2">
+              <label className="rounded-sm border border-yellow-400/30 p-3">
+                <span className="flex items-start gap-3">
+                  <input
+                    checked={playoffFormat === "semis"}
+                    className="mt-1"
+                    disabled={!isAdmin || isCreating}
+                    name="playoff-format"
+                    onChange={() => setPlayoffFormat("semis")}
+                    type="radio"
+                  />
+                  <span>
+                    <span className="block text-sm font-black uppercase text-white">
+                      Top 4 Semis
+                    </span>
+                    <span className="text-sm font-semibold text-zinc-300">
+                      Seed 1 vs 4, seed 2 vs 3.
+                    </span>
+                  </span>
+                </span>
+              </label>
+              <label className="rounded-sm border border-yellow-400/30 p-3">
+                <span className="flex items-start gap-3">
+                  <input
+                    checked={playoffFormat === "quarters"}
+                    className="mt-1"
+                    disabled={!isAdmin || isCreating}
+                    name="playoff-format"
+                    onChange={() => setPlayoffFormat("quarters")}
+                    type="radio"
+                  />
+                  <span>
+                    <span className="block text-sm font-black uppercase text-white">
+                      Top 7 Quarters
+                    </span>
+                    <span className="text-sm font-semibold text-zinc-300">
+                      Seed 1 skips. 2 vs 7, 3 vs 6, 4 vs 5.
+                    </span>
+                  </span>
+                </span>
+              </label>
+            </div>
             <button
               type="button"
               onClick={() => void createPlayoffs()}
@@ -709,7 +763,7 @@ function PlayoffsPage({
               ) : (
                 <Play size={18} aria-hidden="true" />
               )}
-              Create Semis
+              Create Playoffs
             </button>
             {message ? (
               <p className="mt-3 text-sm font-bold text-yellow-100" role="status">
@@ -720,6 +774,26 @@ function PlayoffsPage({
         </div>
       </section>
 
+      {hasQuarters ? (
+        <section className="poster-surface rounded-md p-5 shadow-court">
+          <SectionHeader icon={ClipboardList} title="Quarterfinals" />
+          <p className="mt-2 text-sm font-bold text-zinc-700">
+            Quarters are first to 21, win by 2, capped at 24.
+          </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+            {quarterMatches.map((match) => (
+              <PlayoffScoreCard
+                key={match.id}
+                adminPassword={adminPassword}
+                isAdmin={isAdmin}
+                match={match}
+                onSavePlayoffScore={onSavePlayoffScore}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="poster-surface rounded-md p-5 shadow-court">
         <SectionHeader icon={ClipboardList} title="Semifinals" />
         <p className="mt-2 text-sm font-bold text-zinc-700">
@@ -727,7 +801,7 @@ function PlayoffsPage({
         </p>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           {semiMatches.length === 0 ? (
-            <EmptyPlayoffState text="Create semis after group matches are complete." />
+            <EmptyPlayoffState text="Create playoffs after group matches are complete." />
           ) : (
             semiMatches.map((match) => (
               <PlayoffScoreCard
@@ -1187,6 +1261,7 @@ function PlayoffScoreCard({
   const parsedA = Number(scoreA);
   const parsedB = Number(scoreB);
   const canSave = isValidCappedScore(parsedA, parsedB, 21, 24);
+  const stageLabel = match.stage === "quarter" ? "Quarter" : "Semi";
 
   async function handleSave() {
     if (!isAdmin) {
@@ -1195,7 +1270,7 @@ function PlayoffScoreCard({
     }
 
     if (!canSave) {
-      setMessage("Semis must be to 21, win by 2, max 24.");
+      setMessage(`${stageLabel}s must be to 21, win by 2, max 24.`);
       return;
     }
 
@@ -1216,7 +1291,7 @@ function PlayoffScoreCard({
     <article className="poster-card rounded-md p-4 text-white">
       <div className="relative z-10 mb-4 flex items-center justify-between gap-3">
         <span className="rounded-sm bg-yellow-400 px-3 py-1 text-sm font-black uppercase text-black">
-          Semi {match.match_number}
+          {stageLabel} {match.match_number}
         </span>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-black">
           {match.completed ? "Completed" : "Open"}
@@ -1248,7 +1323,7 @@ function PlayoffScoreCard({
         ) : (
           <Save size={18} aria-hidden="true" />
         )}
-        Save Semi
+        Save {stageLabel}
       </button>
       {message ? (
         <p className="relative z-10 mt-3 text-sm font-black uppercase text-yellow-100" role="status">

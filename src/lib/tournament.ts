@@ -74,6 +74,7 @@ export function hydratePlayoffMatches(
   players: Player[],
 ): HydratedPlayoffMatch[] {
   const playersById = new Map(players.map((player) => [player.id, player]));
+  const stageOrder = { quarter: 0, semi: 1, final: 2 };
 
   return matches
     .map((match) => {
@@ -105,7 +106,7 @@ export function hydratePlayoffMatches(
       };
     })
     .sort((a, b) => {
-      if (a.stage !== b.stage) return a.stage === "semi" ? -1 : 1;
+      if (a.stage !== b.stage) return stageOrder[a.stage] - stageOrder[b.stage];
       return a.match_number - b.match_number;
     });
 }

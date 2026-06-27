@@ -33,6 +33,10 @@ To add the semifinals/final playoff phase and scoring rules, run:
 
 `supabase/dashboard-setup/06_playoffs_setup.sql`
 
+To add the optional top-7 quarterfinal playoff format to an existing database, run:
+
+`supabase/dashboard-setup/08_quarter_playoff_format.sql`
+
 To apply the optimized regenerated group schedule to an existing database, run:
 
 `supabase/dashboard-setup/07_regenerated_schedule.sql`
