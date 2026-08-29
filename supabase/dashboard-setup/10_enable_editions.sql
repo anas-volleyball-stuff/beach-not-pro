@@ -8,6 +8,9 @@ create table if not exists public.tournament_editions (
   created_at timestamptz not null default now()
 );
 
+drop trigger if exists matches_after_change on public.matches;
+drop function if exists public.sync_current_round();
+
 insert into public.tournament_editions (slug, name, label, is_active, sort_order)
 values
   ('edition-1', 'Beach Not Pro Tour', 'Edition 1', false, 1),
@@ -230,6 +233,11 @@ begin
   return null;
 end;
 $$;
+
+create trigger matches_after_change
+after insert or update or delete on public.matches
+for each statement
+execute function public.after_match_change();
 
 drop function if exists public.reset_tournament(text);
 
