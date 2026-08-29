@@ -141,7 +141,7 @@ export default function App() {
                   Beach Not Pro Tour
                 </span>
                 <span className="block text-sm font-bold uppercase leading-snug text-yellow-200">
-                  Single tournament live dashboard
+                  Second edition live dashboard
                 </span>
               </span>
             </a>
@@ -418,7 +418,7 @@ function HomePage({
               Tour
             </h1>
             <p className="mt-4 max-w-xl text-base font-black uppercase leading-snug text-zinc-100 sm:text-lg">
-              Mixed 2v2 beach volleyball tournament scoreboard.
+              Second edition mixed 2v2 tournament scoreboard.
             </p>
           </div>
           <div className="poster-surface self-end rounded-md p-5 shadow-court">
@@ -503,7 +503,7 @@ function SchedulePage({
       <PageTitle
         icon={CalendarDays}
         title="Schedule"
-        subtitle="Fixed rounds for the single Beach Not Pro Tour tournament."
+        subtitle="Fixed rounds for the second edition Beach Not Pro Tour."
       />
 
       {Array.from({ length: TOTAL_ROUNDS }, (_, index) => index + 1).map((round) => {

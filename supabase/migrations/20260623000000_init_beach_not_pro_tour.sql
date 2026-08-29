@@ -265,20 +265,20 @@ $$;
 
 insert into public.players (name, gender, rating)
 values
-  ('Anas', 'men', 3),
-  ('Harish', 'men', 3),
   ('Kang', 'men', 3),
+  ('Harish', 'men', 3),
+  ('Fai', 'men', 2),
+  ('Gerald', 'men', 2),
   ('Shehan', 'men', 2),
-  ('Maddy', 'men', 2),
   ('Din', 'men', 1),
-  ('Supi', 'men', 1),
+  ('Maddy', 'men', 1),
+  ('Jolene', 'women', 3),
   ('Sophie', 'women', 3),
-  ('Bernie', 'women', 3),
-  ('Jolene', 'women', 2),
-  ('Jing', 'women', 2),
+  ('Katrina', 'women', 3),
+  ('Bernie', 'women', 2),
   ('Cass', 'women', 2),
-  ('Yvonne', 'women', 1),
-  ('Elif', 'women', 1)
+  ('Wanzhen', 'women', 2),
+  ('Jess', 'women', 1)
 on conflict (name) do update set
   gender = excluded.gender,
   rating = excluded.rating;
@@ -292,20 +292,20 @@ with fixed_schedule (
   team_b_player_2
 ) as (
   values
-    (1, 1, 'Din', 'Bernie', 'Maddy', 'Cass'),
-    (1, 2, 'Anas', 'Yvonne', 'Kang', 'Jolene'),
-    (1, 3, 'Supi', 'Sophie', 'Harish', 'Elif'),
-    (2, 1, 'Kang', 'Elif', 'Harish', 'Cass'),
-    (2, 2, 'Anas', 'Jolene', 'Supi', 'Bernie'),
-    (2, 3, 'Din', 'Sophie', 'Shehan', 'Jing'),
-    (3, 1, 'Din', 'Jing', 'Supi', 'Jolene'),
-    (3, 2, 'Kang', 'Yvonne', 'Shehan', 'Bernie'),
-    (3, 3, 'Anas', 'Cass', 'Maddy', 'Sophie'),
-    (4, 1, 'Din', 'Cass', 'Harish', 'Yvonne'),
-    (4, 2, 'Anas', 'Elif', 'Kang', 'Jing'),
-    (4, 3, 'Maddy', 'Jolene', 'Shehan', 'Sophie'),
-    (5, 1, 'Supi', 'Elif', 'Shehan', 'Yvonne'),
-    (5, 2, 'Maddy', 'Bernie', 'Harish', 'Jing')
+    (1, 1, 'Harish', 'Jess', 'Gerald', 'Cass'),
+    (1, 2, 'Fai', 'Bernie', 'Shehan', 'Wanzhen'),
+    (1, 3, 'Din', 'Sophie', 'Maddy', 'Jolene'),
+    (2, 1, 'Din', 'Wanzhen', 'Shehan', 'Jess'),
+    (2, 2, 'Fai', 'Sophie', 'Harish', 'Bernie'),
+    (2, 3, 'Gerald', 'Jolene', 'Kang', 'Katrina'),
+    (3, 1, 'Fai', 'Katrina', 'Kang', 'Wanzhen'),
+    (3, 2, 'Shehan', 'Sophie', 'Harish', 'Cass'),
+    (3, 3, 'Maddy', 'Bernie', 'Gerald', 'Jess'),
+    (4, 1, 'Gerald', 'Katrina', 'Fai', 'Jolene'),
+    (4, 2, 'Kang', 'Jess', 'Shehan', 'Bernie'),
+    (4, 3, 'Din', 'Cass', 'Maddy', 'Wanzhen'),
+    (5, 1, 'Kang', 'Jolene', 'Harish', 'Sophie'),
+    (5, 2, 'Maddy', 'Cass', 'Din', 'Katrina')
 )
 insert into public.matches (
   round_number,

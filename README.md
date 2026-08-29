@@ -1,6 +1,6 @@
 # Beach Not Pro Tour
 
-A production-ready single-tournament web app for the Beach Not Pro Tour. The schedule is fixed, Supabase is the source of truth, and every score save updates standings plus all connected browsers through Supabase Realtime.
+A production-ready single-tournament web app for the Beach Not Pro Tour second edition. The schedule is fixed, Supabase is the source of truth, and every score save updates standings plus all connected browsers through Supabase Realtime.
 
 ## Stack
 
