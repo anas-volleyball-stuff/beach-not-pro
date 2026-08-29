@@ -14,10 +14,13 @@ import type {
   PlayoffFormat,
   PlayoffMatch,
   Standing,
+  TournamentEdition,
   TournamentState,
 } from "../types";
 
 type TournamentData = {
+  editions: TournamentEdition[];
+  selectedEdition: TournamentEdition | null;
   players: Player[];
   matches: HydratedMatch[];
   playoffMatches: HydratedPlayoffMatch[];
@@ -26,6 +29,8 @@ type TournamentData = {
 };
 
 const emptyData: TournamentData = {
+  editions: [],
+  selectedEdition: null,
   players: [],
   matches: [],
   playoffMatches: [],
@@ -33,7 +38,7 @@ const emptyData: TournamentData = {
   tournamentState: null,
 };
 
-export function useTournament() {
+export function useTournament(selectedEditionId: string | null) {
   const [data, setData] = useState<TournamentData>(emptyData);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,31 +51,65 @@ export function useTournament() {
       return;
     }
 
+    const editionsResult = await supabase
+      .from("tournament_editions")
+      .select("*")
+      .order("sort_order");
+
+    const editionTableMissing =
+      editionsResult.error &&
+      "code" in editionsResult.error &&
+      editionsResult.error.code === "PGRST205";
+
+    if (editionsResult.error && !editionTableMissing) {
+      setError(editionsResult.error.message);
+      setIsLoading(false);
+      return;
+    }
+
+    const editions = editionTableMissing
+      ? []
+      : ((editionsResult.data ?? []) as TournamentEdition[]);
+    const selectedEdition =
+      editions.find((edition) => edition.id === selectedEditionId) ??
+      editions.find((edition) => edition.is_active) ??
+      editions[0] ??
+      null;
+
     const [
       playersResult,
       matchesResult,
       playoffMatchesResult,
       standingsResult,
       stateResult,
-    ] =
-      await Promise.all([
-        supabase.from("players").select("*").order("name"),
+    ] = await Promise.all([
+        selectedEdition
+          ? supabase
+              .from("players")
+              .select("*")
+              .eq("edition_id", selectedEdition.id)
+              .order("name")
+          : supabase.from("players").select("*").order("name"),
         supabase
           .from("matches")
           .select("*")
+          .match(selectedEdition ? { edition_id: selectedEdition.id } : {})
           .order("round_number")
           .order("court_number"),
         supabase
           .from("playoff_matches")
           .select("*")
+          .match(selectedEdition ? { edition_id: selectedEdition.id } : {})
           .order("stage")
           .order("match_number"),
         supabase.from("player_standings").select("*"),
-        supabase
-          .from("tournament_state")
-          .select("*")
-          .eq("id", 1)
-          .maybeSingle(),
+        selectedEdition
+          ? supabase
+              .from("tournament_state")
+              .select("*")
+              .eq("edition_id", selectedEdition.id)
+              .maybeSingle()
+          : supabase.from("tournament_state").select("*").eq("id", 1).maybeSingle(),
       ]);
 
     const playoffTableMissing =
@@ -110,6 +149,8 @@ export function useTournament() {
       .sort(byStandingRank);
 
     setData({
+      editions,
+      selectedEdition,
       players,
       matches,
       playoffMatches,
@@ -119,7 +160,7 @@ export function useTournament() {
     setError(null);
     setLastUpdated(new Date());
     setIsLoading(false);
-  }, []);
+  }, [selectedEditionId]);
 
   useEffect(() => {
     void fetchTournament();
@@ -131,6 +172,11 @@ export function useTournament() {
 
     const channel = client
       .channel("beach-not-pro-tour-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournament_editions" },
+        () => void fetchTournament(),
+      )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "players" },
@@ -196,9 +242,14 @@ export function useTournament() {
         throw new Error("Supabase is not configured yet.");
       }
 
-      const { error: rpcError } = await supabase.rpc("reset_tournament", {
-        p_admin_password: adminPassword,
-      });
+      const resetArgs = data.selectedEdition
+        ? {
+            p_admin_password: adminPassword,
+            p_edition_id: data.selectedEdition.id,
+          }
+        : { p_admin_password: adminPassword };
+
+      const { error: rpcError } = await supabase.rpc("reset_tournament", resetArgs);
 
       if (rpcError) {
         throw new Error(rpcError.message);
@@ -206,7 +257,7 @@ export function useTournament() {
 
       await fetchTournament();
     },
-    [fetchTournament],
+    [data.selectedEdition?.id, fetchTournament],
   );
 
   const initializePlayoffs = useCallback(
@@ -215,10 +266,18 @@ export function useTournament() {
         throw new Error("Supabase is not configured yet.");
       }
 
-      const { error: rpcError } = await supabase.rpc("initialize_playoffs", {
-        p_admin_password: adminPassword,
-        p_format: format,
-      });
+      const playoffArgs = data.selectedEdition
+        ? {
+            p_admin_password: adminPassword,
+            p_format: format,
+            p_edition_id: data.selectedEdition.id,
+          }
+        : {
+            p_admin_password: adminPassword,
+            p_format: format,
+          };
+
+      const { error: rpcError } = await supabase.rpc("initialize_playoffs", playoffArgs);
 
       if (rpcError) {
         throw new Error(rpcError.message);
@@ -226,7 +285,7 @@ export function useTournament() {
 
       await fetchTournament();
     },
-    [fetchTournament],
+    [data.selectedEdition?.id, fetchTournament],
   );
 
   const savePlayoffScore = useCallback(

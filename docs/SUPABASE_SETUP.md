@@ -44,12 +44,12 @@ To apply the optimized regenerated group schedule to an existing database, run:
 That clears existing group scores and removes any playoff matches because the
 group phase has changed.
 
-To reset the live database for the second edition players and schedule, run:
+To keep edition-one history and add the second edition beside it, run:
 
-`supabase/dashboard-setup/09_second_edition_reset.sql`
+`supabase/dashboard-setup/10_enable_editions.sql`
 
-That removes old players, matches, standings, and playoff matches before loading
-the new edition-two data.
+That converts the database to support multiple editions, keeps existing data as
+Edition 1, and adds Edition 2 as the active tournament.
 
 ## Reset the Tournament
 

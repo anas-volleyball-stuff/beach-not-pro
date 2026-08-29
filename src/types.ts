@@ -2,6 +2,7 @@ export type Gender = "men" | "women";
 
 export type Player = {
   id: string;
+  edition_id: string;
   name: string;
   gender: Gender;
   rating: number;
@@ -9,6 +10,7 @@ export type Player = {
 
 export type Match = {
   id: string;
+  edition_id: string;
   round_number: number;
   court_number: number;
   team_a_player_1: string;
@@ -22,7 +24,17 @@ export type Match = {
 
 export type TournamentState = {
   id: number;
+  edition_id: string;
   current_round: number;
+};
+
+export type TournamentEdition = {
+  id: string;
+  slug: string;
+  name: string;
+  label: string;
+  is_active: boolean;
+  sort_order: number;
 };
 
 export type Standing = {
@@ -51,6 +63,7 @@ export type FinalFormat = "single_21" | "best_of_3";
 
 export type PlayoffMatch = {
   id: string;
+  edition_id: string;
   match_key: string;
   stage: PlayoffStage;
   match_number: number;

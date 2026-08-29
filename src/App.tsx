@@ -35,6 +35,7 @@ import type {
   Player,
   PlayoffFormat,
   Standing,
+  TournamentEdition,
 } from "./types";
 
 type AppRoute = "home" | "schedule" | "scoring" | "playoffs" | "rankings" | "player";
@@ -72,7 +73,8 @@ function genderLabel(gender: Player["gender"]) {
 export default function App() {
   const route = useHashRoute();
   const activeRoute = parseRoute(route);
-  const tournament = useTournament();
+  const [selectedEditionId, setSelectedEditionId] = useState<string | null>(null);
+  const tournament = useTournament(selectedEditionId);
   const currentRound = tournament.tournamentState?.current_round ?? 1;
   const [adminPassword, setAdminPassword] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -84,6 +86,12 @@ export default function App() {
       tournament.matches.filter((match) => match.round_number === currentRound),
     [currentRound, tournament.matches],
   );
+
+  useEffect(() => {
+    if (!selectedEditionId && tournament.selectedEdition) {
+      setSelectedEditionId(tournament.selectedEdition.id);
+    }
+  }, [selectedEditionId, tournament.selectedEdition]);
 
   if (!isSupabaseConfigured) {
     return <SetupRequired />;
@@ -179,6 +187,14 @@ export default function App() {
             onReset={() => void resetTournament()}
             onUnlock={unlockAdmin}
           />
+
+          {tournament.editions.length > 0 ? (
+            <EditionTabs
+              editions={tournament.editions}
+              selectedEditionId={tournament.selectedEdition?.id ?? selectedEditionId}
+              onSelectEdition={setSelectedEditionId}
+            />
+          ) : null}
         </div>
       </header>
 
@@ -244,6 +260,40 @@ export default function App() {
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+function EditionTabs({
+  editions,
+  selectedEditionId,
+  onSelectEdition,
+}: {
+  editions: TournamentEdition[];
+  selectedEditionId: string | null;
+  onSelectEdition: (editionId: string) => void;
+}) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Tournament editions">
+      {editions.map((edition) => {
+        const isSelected = edition.id === selectedEditionId;
+
+        return (
+          <button
+            key={edition.id}
+            type="button"
+            onClick={() => onSelectEdition(edition.id)}
+            className={classNames(
+              "shrink-0 rounded-sm border px-4 py-2 text-sm font-black uppercase transition",
+              isSelected
+                ? "border-yellow-300 bg-yellow-400 text-black"
+                : "border-white/15 bg-black text-yellow-100 hover:border-yellow-300/70",
+            )}
+          >
+            {edition.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
