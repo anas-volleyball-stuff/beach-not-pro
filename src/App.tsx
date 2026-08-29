@@ -317,6 +317,27 @@ function AdminControls({
   onReset: () => void;
   onUnlock: () => void;
 }) {
+  const [isConfirmingReset, setIsConfirmingReset] = useState(false);
+
+  useEffect(() => {
+    if (!isConfirmingReset) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setIsConfirmingReset(false);
+    }, 10000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isConfirmingReset]);
+
+  function requestResetConfirmation() {
+    setIsConfirmingReset(true);
+  }
+
+  function confirmReset() {
+    setIsConfirmingReset(false);
+    onReset();
+  }
+
   return (
     <div className="rounded-md border border-yellow-400/20 bg-white/5 p-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -327,29 +348,59 @@ function AdminControls({
 
         {isAdmin ? (
           <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onReset}
-              disabled={isResetting}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 text-sm font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
-              title="Reset tournament"
-            >
-              {isResetting ? (
-                <Loader2 className="animate-spin" size={16} aria-hidden="true" />
-              ) : (
-                <RotateCcw size={16} aria-hidden="true" />
-              )}
-              Reset Game
-            </button>
-            <button
-              type="button"
-              onClick={onLock}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm border border-white/15 px-4 py-2 text-sm font-black uppercase text-white transition hover:border-yellow-300/70 hover:text-yellow-100"
-              title="Lock admin mode"
-            >
-              <LogOut size={16} aria-hidden="true" />
-              Lock
-            </button>
+            {isConfirmingReset ? (
+              <>
+                <button
+                  type="button"
+                  onClick={confirmReset}
+                  disabled={isResetting}
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-red-600 px-4 py-2 text-sm font-black uppercase text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Confirm reset tournament"
+                >
+                  {isResetting ? (
+                    <Loader2 className="animate-spin" size={16} aria-hidden="true" />
+                  ) : (
+                    <RotateCcw size={16} aria-hidden="true" />
+                  )}
+                  Confirm Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmingReset(false)}
+                  disabled={isResetting}
+                  className="inline-flex min-h-10 items-center justify-center rounded-sm border border-white/15 px-4 py-2 text-sm font-black uppercase text-white transition hover:border-yellow-300/70 hover:text-yellow-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Cancel reset"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={requestResetConfirmation}
+                disabled={isResetting}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 text-sm font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                title="Reset tournament"
+              >
+                {isResetting ? (
+                  <Loader2 className="animate-spin" size={16} aria-hidden="true" />
+                ) : (
+                  <RotateCcw size={16} aria-hidden="true" />
+                )}
+                Reset Game
+              </button>
+            )}
+            {!isConfirmingReset ? (
+              <button
+                type="button"
+                onClick={onLock}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm border border-white/15 px-4 py-2 text-sm font-black uppercase text-white transition hover:border-yellow-300/70 hover:text-yellow-100"
+                title="Lock admin mode"
+              >
+                <LogOut size={16} aria-hidden="true" />
+                Lock
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="grid gap-2 sm:grid-cols-[180px_auto]">
