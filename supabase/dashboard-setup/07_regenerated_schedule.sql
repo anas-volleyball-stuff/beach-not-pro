@@ -7,20 +7,20 @@ with fixed_schedule (
   team_b_player_2
 ) as (
   values
-    (1, 1, 'Harish', 'Jess', 'Gerald', 'Cass'),
-    (1, 2, 'Fai', 'Bernie', 'Shehan', 'Wanzhen'),
-    (1, 3, 'Din', 'Sophie', 'Maddy', 'Jolene'),
-    (2, 1, 'Din', 'Wanzhen', 'Shehan', 'Jess'),
-    (2, 2, 'Fai', 'Sophie', 'Harish', 'Bernie'),
-    (2, 3, 'Gerald', 'Jolene', 'Kang', 'Katrina'),
-    (3, 1, 'Fai', 'Katrina', 'Kang', 'Wanzhen'),
-    (3, 2, 'Shehan', 'Sophie', 'Harish', 'Cass'),
-    (3, 3, 'Maddy', 'Bernie', 'Gerald', 'Jess'),
-    (4, 1, 'Gerald', 'Katrina', 'Fai', 'Jolene'),
-    (4, 2, 'Kang', 'Jess', 'Shehan', 'Bernie'),
-    (4, 3, 'Din', 'Cass', 'Maddy', 'Wanzhen'),
-    (5, 1, 'Kang', 'Jolene', 'Harish', 'Sophie'),
-    (5, 2, 'Maddy', 'Cass', 'Din', 'Katrina')
+    (1, 1, 'Shehan', 'Cass', 'Maddy', 'Katrina'),
+    (1, 2, 'Fai', 'Bernie', 'Din', 'Sophie'),
+    (1, 3, 'Kang', 'Wanzhen', 'Gerald', 'Jolene'),
+    (2, 1, 'Harish', 'Jess', 'Shehan', 'Wanzhen'),
+    (2, 2, 'Gerald', 'Cass', 'Din', 'Jolene'),
+    (2, 3, 'Kang', 'Bernie', 'Fai', 'Katrina'),
+    (3, 1, 'Kang', 'Jess', 'Maddy', 'Sophie'),
+    (3, 2, 'Harish', 'Katrina', 'Fai', 'Jolene'),
+    (3, 3, 'Gerald', 'Wanzhen', 'Shehan', 'Bernie'),
+    (4, 1, 'Shehan', 'Jess', 'Din', 'Cass'),
+    (4, 2, 'Fai', 'Sophie', 'Maddy', 'Jolene'),
+    (4, 3, 'Kang', 'Katrina', 'Harish', 'Wanzhen'),
+    (5, 1, 'Harish', 'Cass', 'Gerald', 'Sophie'),
+    (5, 2, 'Din', 'Bernie', 'Maddy', 'Jess')
 )
 update public.matches
 set

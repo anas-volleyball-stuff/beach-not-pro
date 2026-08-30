@@ -51,6 +51,14 @@ To keep edition-one history and add the second edition beside it, run:
 That converts the database to support multiple editions, keeps existing data as
 Edition 1, and adds Edition 2 as the active tournament.
 
+To replace only the Edition 2 group schedule in an already converted database,
+run:
+
+`supabase/dashboard-setup/11_update_edition_two_schedule.sql`
+
+That clears Edition 2 scores and playoff matches, keeps Edition 1 history, and
+starts Edition 2 back at Round 1.
+
 ## Reset the Tournament
 
 To start the tournament fresh from Supabase SQL Editor without changing the fixed
