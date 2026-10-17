@@ -59,6 +59,14 @@ run:
 That clears Edition 2 scores and playoff matches, keeps Edition 1 history, and
 starts Edition 2 back at Round 1.
 
+To add Edition 3 with adaptive, pool-only round generation, run:
+
+`supabase/dashboard-setup/12_add_adaptive_edition_three.sql`
+
+Run it after `10_enable_editions.sql`. It keeps Editions 1 and 2 intact, adds the
+new players and private starting ratings, creates the live form-rating and round
+generation functions, and generates Round 1 automatically.
+
 ## Reset the Tournament
 
 To start the tournament fresh from Supabase SQL Editor without changing the fixed

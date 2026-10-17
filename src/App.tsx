@@ -18,7 +18,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured } from "./lib/supabase";
 import {
-  TOTAL_ROUNDS,
   formatTeam,
   formatPlayoffTeam,
   getMatchOutcome,
@@ -80,12 +79,20 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminMessage, setAdminMessage] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const isAdaptive = tournament.selectedEdition?.adaptive_scheduling ?? false;
+  const hasPlayoffs = tournament.selectedEdition?.has_playoffs ?? true;
+  const visibleNavItems = hasPlayoffs
+    ? navItems
+    : navItems.filter((item) => item.route !== "playoffs");
 
   const currentMatches = useMemo(
     () =>
       tournament.matches.filter((match) => match.round_number === currentRound),
     [currentRound, tournament.matches],
   );
+  const canGenerateRound =
+    currentMatches.length === 0 || currentMatches.every((match) => match.completed);
 
   useEffect(() => {
     if (!selectedEditionId && tournament.selectedEdition) {
@@ -135,6 +142,29 @@ export default function App() {
     }
   }
 
+  async function generateNextRound() {
+    if (!isAdmin) {
+      setAdminMessage("Unlock admin mode first.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setAdminMessage(null);
+
+    try {
+      await tournament.generateNextRound(adminPassword);
+      setAdminMessage("Next round generated and shared live.");
+    } catch (generateError) {
+      setAdminMessage(
+        generateError instanceof Error
+          ? generateError.message
+          : "The next round could not be generated.",
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
   return (
     <div className="min-h-screen poster-bg text-zinc-100">
       <header className="border-b border-yellow-400/25 bg-black/95 text-white shadow-court">
@@ -149,14 +179,14 @@ export default function App() {
                   Beach Not Pro Tour
                 </span>
                 <span className="block text-sm font-bold uppercase leading-snug text-yellow-200">
-                  Second edition live dashboard
+                  {tournament.selectedEdition?.label ?? "Live tournament dashboard"}
                 </span>
               </span>
             </a>
           </div>
 
-          <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0 sm:pb-0" aria-label="Primary navigation">
-            {navItems.map((item) => {
+          <nav className={classNames("-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:overflow-visible sm:px-0 sm:pb-0", hasPlayoffs ? "sm:grid-cols-5" : "sm:grid-cols-4")} aria-label="Primary navigation">
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeRoute.page === item.route;
               return (
@@ -181,9 +211,13 @@ export default function App() {
             adminMessage={adminMessage}
             adminPassword={adminPassword}
             isAdmin={isAdmin}
+            isAdaptive={isAdaptive}
+            isGenerating={isGenerating}
             isResetting={isResetting}
+            canGenerateRound={canGenerateRound}
             onAdminPasswordChange={setAdminPassword}
             onLock={lockAdmin}
+            onGenerateNextRound={() => void generateNextRound()}
             onReset={() => void resetTournament()}
             onUnlock={unlockAdmin}
           />
@@ -217,6 +251,9 @@ export default function App() {
                 progress={tournament.progress}
                 standings={tournament.standings}
                 lastUpdated={tournament.lastUpdated}
+                isAdaptive={isAdaptive}
+                editionLabel={tournament.selectedEdition?.label ?? "Tournament"}
+                hasPlayoffs={hasPlayoffs}
               />
             ) : null}
             {activeRoute.page === "schedule" ? (
@@ -224,6 +261,7 @@ export default function App() {
                 currentRound={currentRound}
                 matches={tournament.matches}
                 players={tournament.players}
+                isAdaptive={isAdaptive}
               />
             ) : null}
             {activeRoute.page === "scoring" ? (
@@ -233,12 +271,13 @@ export default function App() {
                 isAdmin={isAdmin}
                 matches={tournament.matches}
                 onSaveScore={tournament.saveScore}
+                isAdaptive={isAdaptive}
               />
             ) : null}
             {activeRoute.page === "rankings" ? (
-              <RankingsPage standings={tournament.standings} />
+              <RankingsPage standings={tournament.standings} combined={isAdaptive} />
             ) : null}
-            {activeRoute.page === "playoffs" ? (
+            {activeRoute.page === "playoffs" && hasPlayoffs ? (
               <PlayoffsPage
                 adminPassword={adminPassword}
                 isAdmin={isAdmin}
@@ -302,18 +341,26 @@ function AdminControls({
   adminMessage,
   adminPassword,
   isAdmin,
+  isAdaptive,
+  isGenerating,
   isResetting,
+  canGenerateRound,
   onAdminPasswordChange,
   onLock,
+  onGenerateNextRound,
   onReset,
   onUnlock,
 }: {
   adminMessage: string | null;
   adminPassword: string;
   isAdmin: boolean;
+  isAdaptive: boolean;
+  isGenerating: boolean;
   isResetting: boolean;
+  canGenerateRound: boolean;
   onAdminPasswordChange: (value: string) => void;
   onLock: () => void;
+  onGenerateNextRound: () => void;
   onReset: () => void;
   onUnlock: () => void;
 }) {
@@ -348,8 +395,33 @@ function AdminControls({
 
         {isAdmin ? (
           <div className="flex flex-col gap-2 sm:flex-row">
+            {isAdaptive && !isConfirmingReset ? (
+              <button
+                type="button"
+                onClick={onGenerateNextRound}
+                disabled={isGenerating || isResetting || !canGenerateRound}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 text-sm font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                title={
+                  canGenerateRound
+                    ? "Generate the next adaptive round"
+                    : "Complete the current round first"
+                }
+              >
+                {isGenerating ? (
+                  <Loader2 className="animate-spin" size={16} aria-hidden="true" />
+                ) : (
+                  <CalendarDays size={16} aria-hidden="true" />
+                )}
+                Generate Round
+              </button>
+            ) : null}
             {isConfirmingReset ? (
               <>
+                <p className="max-w-xs text-xs font-bold text-red-200 sm:self-center">
+                  {isAdaptive
+                    ? "This removes every Edition 3 score and generated round, then creates a fresh Round 1."
+                    : "This clears every score in the selected edition."}
+                </p>
                 <button
                   type="button"
                   onClick={confirmReset}
@@ -362,7 +434,7 @@ function AdminControls({
                   ) : (
                     <RotateCcw size={16} aria-hidden="true" />
                   )}
-                  Confirm Reset
+                  {isAdaptive ? "Confirm Fresh Start" : "Confirm Reset"}
                 </button>
                 <button
                   type="button"
@@ -433,6 +505,11 @@ function AdminControls({
           {adminMessage}
         </p>
       ) : null}
+      {isAdmin && isAdaptive && !canGenerateRound ? (
+        <p className="mt-2 text-xs font-bold uppercase text-zinc-400">
+          Save every current-round score before generating the next round.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -491,6 +568,9 @@ function HomePage({
   playoffTotalMatches,
   standings,
   lastUpdated,
+  isAdaptive,
+  editionLabel,
+  hasPlayoffs,
 }: {
   currentRound: number;
   currentMatches: HydratedMatch[];
@@ -503,6 +583,9 @@ function HomePage({
   playoffTotalMatches: number;
   standings: Array<Standing & { player: Player }>;
   lastUpdated: Date | null;
+  isAdaptive: boolean;
+  editionLabel: string;
+  hasPlayoffs: boolean;
 }) {
   return (
     <div className="space-y-5">
@@ -519,14 +602,14 @@ function HomePage({
               Tour
             </h1>
             <p className="mt-4 max-w-xl text-base font-black uppercase leading-snug text-zinc-100 sm:text-lg">
-              Second edition mixed 2v2 tournament scoreboard.
+              {editionLabel} {isAdaptive ? "adaptive pool tournament" : "mixed 2v2 tournament"} scoreboard.
             </p>
           </div>
           <div className="poster-surface self-end rounded-md p-5 shadow-court">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-black uppercase tracking-normal text-zinc-600">
-                  Tournament Progress
+                  {isAdaptive ? "Generated Games" : "Tournament Progress"}
                 </p>
                 <p className="mt-1 text-4xl font-black text-black">
                   {completedMatches}/{totalMatches}
@@ -547,13 +630,15 @@ function HomePage({
             </p>
             <div className="mt-4 grid gap-2 text-sm font-black uppercase text-zinc-700">
               <div className="flex justify-between gap-3">
-                <span>Groups</span>
+                <span>{isAdaptive ? "Pool" : "Groups"}</span>
                 <span>{groupCompletedMatches}/{groupTotalMatches}</span>
               </div>
-              <div className="flex justify-between gap-3">
-                <span>Playoffs</span>
-                <span>{playoffCompletedMatches}/{playoffTotalMatches}</span>
-              </div>
+              {hasPlayoffs ? (
+                <div className="flex justify-between gap-3">
+                  <span>Playoffs</span>
+                  <span>{playoffCompletedMatches}/{playoffTotalMatches}</span>
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="poster-showcase self-stretch">
@@ -574,16 +659,22 @@ function HomePage({
 
         <section className="poster-surface rounded-md p-5 shadow-court">
           <SectionHeader icon={Medal} title="Current Leaders" />
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <LeaderList
-              title="Men"
-              standings={standings.filter((standing) => standing.player.gender === "men").slice(0, 3)}
-            />
-            <LeaderList
-              title="Women"
-              standings={standings.filter((standing) => standing.player.gender === "women").slice(0, 3)}
-            />
-          </div>
+          {isAdaptive ? (
+            <div className="mt-4">
+              <LeaderList title="Overall" standings={standings.slice(0, 5)} />
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <LeaderList
+                title="Men"
+                standings={standings.filter((standing) => standing.player.gender === "men").slice(0, 3)}
+              />
+              <LeaderList
+                title="Women"
+                standings={standings.filter((standing) => standing.player.gender === "women").slice(0, 3)}
+              />
+            </div>
+          )}
         </section>
       </div>
     </div>
@@ -594,20 +685,30 @@ function SchedulePage({
   currentRound,
   matches,
   players,
+  isAdaptive,
 }: {
   currentRound: number;
   matches: HydratedMatch[];
   players: Player[];
+  isAdaptive: boolean;
 }) {
+  const roundCount = isAdaptive
+    ? Math.max(1, ...matches.map((match) => match.round_number))
+    : 5;
+
   return (
     <div className="space-y-5">
       <PageTitle
         icon={CalendarDays}
         title="Schedule"
-        subtitle="Fixed rounds for the second edition Beach Not Pro Tour."
+        subtitle={
+          isAdaptive
+            ? "Rounds are generated one at a time from live form, balance, and player variety."
+            : "Fixed rounds for the Beach Not Pro Tour."
+        }
       />
 
-      {Array.from({ length: TOTAL_ROUNDS }, (_, index) => index + 1).map((round) => {
+      {Array.from({ length: roundCount }, (_, index) => index + 1).map((round) => {
         const roundMatches = matches.filter((match) => match.round_number === round);
         const restingPlayers = getRestingPlayers(players, matches, round);
         const isCurrent = round === currentRound;
@@ -665,6 +766,7 @@ function ScoringPage({
   isAdmin,
   matches,
   onSaveScore,
+  isAdaptive,
 }: {
   adminPassword: string;
   currentRound: number;
@@ -676,7 +778,12 @@ function ScoringPage({
     scoreB: number,
     adminPassword: string,
   ) => Promise<void>;
+  isAdaptive: boolean;
 }) {
+  const roundCount = isAdaptive
+    ? Math.max(1, ...matches.map((match) => match.round_number))
+    : 5;
+
   return (
     <div className="space-y-5">
       <PageTitle
@@ -688,7 +795,7 @@ function ScoringPage({
             : "Unlock admin mode above to change scores."
         }
       />
-      {Array.from({ length: TOTAL_ROUNDS }, (_, index) => index + 1).map((round) => (
+      {Array.from({ length: roundCount }, (_, index) => index + 1).map((round) => (
         <section
           key={round}
           className={classNames(
@@ -980,8 +1087,10 @@ function EmptyPlayoffState({ text }: { text: string }) {
 
 function RankingsPage({
   standings,
+  combined = false,
 }: {
   standings: Array<Standing & { player: Player }>;
+  combined?: boolean;
 }) {
   const mensStandings = standings.filter((standing) => standing.player.gender === "men");
   const womensStandings = standings.filter(
@@ -995,10 +1104,14 @@ function RankingsPage({
         title="Rankings"
         subtitle="Score = 0.95 x wins + 0.05 x point differential."
       />
-      <div className="grid gap-5 lg:grid-cols-2">
-        <RankingTable title="Men" standings={mensStandings} />
-        <RankingTable title="Women" standings={womensStandings} />
-      </div>
+      {combined ? (
+        <RankingTable title="Overall" standings={standings} />
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <RankingTable title="Men" standings={mensStandings} />
+          <RankingTable title="Women" standings={womensStandings} />
+        </div>
+      )}
     </div>
   );
 }

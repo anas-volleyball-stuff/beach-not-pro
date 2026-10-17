@@ -6,6 +6,7 @@ export type Player = {
   name: string;
   gender: Gender;
   rating: number;
+  form_rating?: number;
 };
 
 export type Match = {
@@ -35,6 +36,8 @@ export type TournamentEdition = {
   label: string;
   is_active: boolean;
   sort_order: number;
+  adaptive_scheduling: boolean;
+  has_playoffs: boolean;
 };
 
 export type Standing = {
