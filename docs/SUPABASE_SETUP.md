@@ -85,6 +85,14 @@ opponents substantially more expensive than small team-strength differences. The
 latest setup 13 already includes these stronger weights, so setup 14 is only
 needed when setup 13 was run before this update.
 
+To apply the revised Edition 3 starting ratings without changing completed match
+results, run:
+
+`supabase/dashboard-setup/15_update_edition_three_ratings.sql`
+
+If the current round is completely unplayed, it is regenerated using the revised
+ratings. A partially played round is kept exactly as it is.
+
 ## Reset the Tournament
 
 To start the tournament fresh from Supabase SQL Editor without changing the fixed
