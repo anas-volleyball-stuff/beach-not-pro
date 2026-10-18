@@ -139,7 +139,7 @@ begin
   on conflict (player_1, player_2) do update set
     opponent_count = excluded.opponent_count;
 
-  for trial in 1..3000 loop
+  for trial in 1..6000 loop
     select array_agg(id order by random())
     into candidate_players
     from (
@@ -229,9 +229,9 @@ begin
       );
 
     candidate_score := candidate_score
-      + (partner_repeats * 500)
-      + (opponent_repeats * 10)
-      + (consecutive_rests * 25)
+      + (partner_repeats * 5000)
+      + (opponent_repeats * 180)
+      + (consecutive_rests * 1000)
       + random() / 100;
 
     if best_score is null or candidate_score < best_score then

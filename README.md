@@ -70,6 +70,10 @@ three matches and two resting players using these priorities:
 - fewer repeated opponents;
 - fair match and rest counts.
 
+The diversity weights make repeated partnerships a near-hard last resort and
+strongly prefer unseen opponents. The generator evaluates 6,000 valid candidate
+arrangements before fixing each round.
+
 Admins can add players, adjust their private 1-10 skill score, withdraw injured
 players, or restore them later. A withdrawal never deletes completed matches or
 ranking results; it only excludes that player from future generated rounds.

@@ -75,6 +75,16 @@ Run it after `12_add_adaptive_edition_three.sql`. It adds safe player withdrawal
 restoration, skill-score editing, and flexible one-to-three-court generation while
 preserving every completed score.
 
+To strengthen the no-repeat preference on a database that already ran setup 13,
+run:
+
+`supabase/dashboard-setup/14_strengthen_player_variety.sql`
+
+It increases the round search to 6,000 candidates and makes repeated partners and
+opponents substantially more expensive than small team-strength differences. The
+latest setup 13 already includes these stronger weights, so setup 14 is only
+needed when setup 13 was run before this update.
+
 ## Reset the Tournament
 
 To start the tournament fresh from Supabase SQL Editor without changing the fixed
