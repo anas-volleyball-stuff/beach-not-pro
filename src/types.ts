@@ -8,6 +8,7 @@ export type Player = {
   rating: number;
   form_rating?: number;
   active: boolean;
+  ranking_visible: boolean;
 };
 
 export type Match = {

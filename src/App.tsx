@@ -4,6 +4,8 @@ import {
   CheckCircle2,
   CircleDot,
   ClipboardList,
+  Eye,
+  EyeOff,
   LockKeyhole,
   Loader2,
   LogOut,
@@ -245,6 +247,7 @@ export default function App() {
               <RosterManager
                 adminPassword={adminPassword}
                 onSavePlayer={tournament.savePlayer}
+                onSetRankingVisibility={tournament.setPlayerRankingVisibility}
                 players={tournament.players}
               />
             ) : null}
@@ -527,6 +530,7 @@ function AdminControls({
 function RosterManager({
   adminPassword,
   onSavePlayer,
+  onSetRankingVisibility,
   players,
 }: {
   adminPassword: string;
@@ -538,6 +542,11 @@ function RosterManager({
       rating: number;
       active: boolean;
     },
+    adminPassword: string,
+  ) => Promise<void>;
+  onSetRankingVisibility: (
+    playerId: string,
+    visible: boolean,
     adminPassword: string,
   ) => Promise<void>;
   players: Player[];
@@ -675,6 +684,7 @@ function RosterManager({
                   key={player.id}
                   adminPassword={adminPassword}
                   onSavePlayer={onSavePlayer}
+                  onSetRankingVisibility={onSetRankingVisibility}
                   player={player}
                 />
               ))}
@@ -693,6 +703,7 @@ function RosterManager({
 function RosterPlayerRow({
   adminPassword,
   onSavePlayer,
+  onSetRankingVisibility,
   player,
 }: {
   adminPassword: string;
@@ -706,6 +717,11 @@ function RosterPlayerRow({
     },
     adminPassword: string,
   ) => Promise<void>;
+  onSetRankingVisibility: (
+    playerId: string,
+    visible: boolean,
+    adminPassword: string,
+  ) => Promise<void>;
   player: Player;
 }) {
   const [rating, setRating] = useState(String(player.rating));
@@ -713,6 +729,7 @@ function RosterPlayerRow({
   const [message, setMessage] = useState<string | null>(null);
   const [isConfirmingWithdraw, setIsConfirmingWithdraw] = useState(false);
   const isActive = player.active !== false;
+  const isRankingVisible = player.ranking_visible !== false;
 
   useEffect(() => setRating(String(player.rating)), [player.rating]);
   useEffect(() => {
@@ -750,6 +767,19 @@ function RosterPlayerRow({
     }
   }
 
+  async function toggleRankingVisibility() {
+    setIsSaving(true);
+    setMessage(null);
+    try {
+      await onSetRankingVisibility(player.id, !isRankingVisible, adminPassword);
+      setMessage(isRankingVisible ? "Hidden from rankings." : "Shown in rankings.");
+    } catch (saveError) {
+      setMessage(saveError instanceof Error ? saveError.message : "Change was not saved.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <div className={classNames("grid gap-3 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_120px_auto] sm:items-center", isActive ? "border-yellow-900/15 bg-white/70" : "border-zinc-300 bg-zinc-100 opacity-75")}>
       <div className="min-w-0">
@@ -759,6 +789,7 @@ function RosterPlayerRow({
             {genderLabel(player.gender)}
           </span>
           {!isActive ? <span className="text-xs font-black uppercase text-red-700">Withdrawn</span> : null}
+          {!isRankingVisible ? <span className="text-xs font-black uppercase text-zinc-600">Ranking hidden</span> : null}
         </div>
         {message ? <p className="mt-1 text-xs font-bold text-zinc-600">{message}</p> : null}
       </div>
@@ -774,7 +805,7 @@ function RosterPlayerRow({
           step="0.5"
         />
       </label>
-      <div className="grid grid-cols-2 gap-2 sm:flex">
+      <div className="grid grid-cols-3 gap-2 sm:flex">
         <button
           type="button"
           onClick={() => {
@@ -789,6 +820,16 @@ function RosterPlayerRow({
         >
           {isSaving ? <Loader2 className="animate-spin" size={16} /> : isConfirmingWithdraw ? null : <Save size={16} />}
           {isConfirmingWithdraw ? "Cancel" : "Update"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void toggleRankingVisibility()}
+          disabled={isSaving}
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-zinc-700 px-3 text-sm font-black uppercase text-white disabled:opacity-60"
+          title={isRankingVisible ? "Hide from rankings" : "Show in rankings"}
+        >
+          {isRankingVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+          {isRankingVisible ? "Hide" : "Show"}
         </button>
         <button
           type="button"

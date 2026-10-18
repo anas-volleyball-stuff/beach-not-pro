@@ -90,6 +90,14 @@ results, run:
 
 `supabase/dashboard-setup/15_update_edition_three_ratings.sql`
 
+To add the admin ranking-visibility control and hide the two Edition 3 test
+players, run:
+
+`supabase/dashboard-setup/16_add_ranking_visibility.sql`
+
+This keeps hidden players and their match history in Supabase. Admins can use the
+roster manager's Hide/Show button to change ranking visibility at any time.
+
 If the current round is completely unplayed, it is regenerated using the revised
 ratings. A partially played round is kept exactly as it is.
 

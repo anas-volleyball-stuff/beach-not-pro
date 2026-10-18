@@ -144,7 +144,7 @@ export function useTournament(selectedEditionId: string | null) {
       })
       .filter(
         (standing): standing is Standing & { player: Player } =>
-          standing !== null,
+          standing !== null && standing.player.ranking_visible !== false,
       )
       .sort(byStandingRank);
 
@@ -350,6 +350,30 @@ export function useTournament(selectedEditionId: string | null) {
     [data.selectedEdition, fetchTournament],
   );
 
+  const setPlayerRankingVisibility = useCallback(
+    async (playerId: string, visible: boolean, adminPassword: string) => {
+      if (!supabase) {
+        throw new Error("Supabase is not configured yet.");
+      }
+
+      const { error: rpcError } = await supabase.rpc(
+        "set_player_ranking_visibility",
+        {
+          p_admin_password: adminPassword,
+          p_player_id: playerId,
+          p_visible: visible,
+        },
+      );
+
+      if (rpcError) {
+        throw new Error(rpcError.message);
+      }
+
+      await fetchTournament();
+    },
+    [fetchTournament],
+  );
+
   const savePlayoffScore = useCallback(
     async (
       playoffMatchId: string,
@@ -443,6 +467,7 @@ export function useTournament(selectedEditionId: string | null) {
     resetTournament,
     generateNextRound,
     savePlayer,
+    setPlayerRankingVisibility,
     initializePlayoffs,
     savePlayoffScore,
     saveFinalScore,
