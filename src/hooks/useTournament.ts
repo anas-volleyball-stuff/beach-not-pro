@@ -312,6 +312,44 @@ export function useTournament(selectedEditionId: string | null) {
     [data.selectedEdition, fetchTournament],
   );
 
+  const savePlayer = useCallback(
+    async (
+      player: {
+        id: string | null;
+        name: string;
+        gender: Player["gender"];
+        rating: number;
+        active: boolean;
+      },
+      adminPassword: string,
+    ) => {
+      if (!supabase) {
+        throw new Error("Supabase is not configured yet.");
+      }
+
+      if (!data.selectedEdition) {
+        throw new Error("Select an edition first.");
+      }
+
+      const { error: rpcError } = await supabase.rpc("manage_adaptive_player", {
+        p_admin_password: adminPassword,
+        p_edition_id: data.selectedEdition.id,
+        p_player_id: player.id,
+        p_name: player.name,
+        p_gender: player.gender,
+        p_rating: player.rating,
+        p_active: player.active,
+      });
+
+      if (rpcError) {
+        throw new Error(rpcError.message);
+      }
+
+      await fetchTournament();
+    },
+    [data.selectedEdition, fetchTournament],
+  );
+
   const savePlayoffScore = useCallback(
     async (
       playoffMatchId: string,
@@ -404,6 +442,7 @@ export function useTournament(selectedEditionId: string | null) {
     saveScore,
     resetTournament,
     generateNextRound,
+    savePlayer,
     initializePlayoffs,
     savePlayoffScore,
     saveFinalScore,

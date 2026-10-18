@@ -70,6 +70,11 @@ three matches and two resting players using these priorities:
 - fewer repeated opponents;
 - fair match and rest counts.
 
+Admins can add players, adjust their private 1-10 skill score, withdraw injured
+players, or restore them later. A withdrawal never deletes completed matches or
+ranking results; it only excludes that player from future generated rounds.
+Roster changes are allowed before scoring the current round or between completed rounds.
+
 Form ratings start from the organizer's private 1-10 ratings and evolve after each
 result based on expected strength and score margin. Public rankings remain based
 only on wins and point differential.

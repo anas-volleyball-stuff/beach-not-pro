@@ -12,7 +12,10 @@ import {
   RotateCcw,
   Save,
   Trophy,
+  UserCheck,
+  UserPlus,
   UserRound,
+  UserX,
   UsersRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -238,6 +241,13 @@ export default function App() {
           <LoadingState />
         ) : (
           <>
+            {isAdmin && isAdaptive ? (
+              <RosterManager
+                adminPassword={adminPassword}
+                onSavePlayer={tournament.savePlayer}
+                players={tournament.players}
+              />
+            ) : null}
             {activeRoute.page === "home" ? (
               <HomePage
                 currentRound={currentRound}
@@ -510,6 +520,292 @@ function AdminControls({
           Save every current-round score before generating the next round.
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function RosterManager({
+  adminPassword,
+  onSavePlayer,
+  players,
+}: {
+  adminPassword: string;
+  onSavePlayer: (
+    player: {
+      id: string | null;
+      name: string;
+      gender: Player["gender"];
+      rating: number;
+      active: boolean;
+    },
+    adminPassword: string,
+  ) => Promise<void>;
+  players: Player[];
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [gender, setGender] = useState<Player["gender"]>("men");
+  const [rating, setRating] = useState("6");
+  const [isAdding, setIsAdding] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const activePlayers = players.filter((player) => player.active !== false);
+
+  async function addPlayer() {
+    const parsedRating = Number(rating);
+    if (!name.trim()) {
+      setMessage("Enter the player's name.");
+      return;
+    }
+    if (!Number.isFinite(parsedRating) || parsedRating < 1 || parsedRating > 10) {
+      setMessage("Skill score must be between 1 and 10.");
+      return;
+    }
+
+    setIsAdding(true);
+    setMessage(null);
+    try {
+      await onSavePlayer(
+        {
+          id: null,
+          name: name.trim(),
+          gender,
+          rating: parsedRating,
+          active: true,
+        },
+        adminPassword,
+      );
+      setName("");
+      setRating("6");
+      setMessage("Player added. Existing results were kept.");
+    } catch (saveError) {
+      setMessage(
+        saveError instanceof Error ? saveError.message : "Player was not added.",
+      );
+    } finally {
+      setIsAdding(false);
+    }
+  }
+
+  return (
+    <section className="poster-surface mb-5 rounded-md p-4 shadow-court">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <UsersRound size={20} className="text-yellow-700" aria-hidden="true" />
+            <h2 className="text-lg font-black uppercase text-black">Roster Manager</h2>
+          </div>
+          <p className="mt-1 text-sm font-semibold text-zinc-600">
+            {activePlayers.length} active players. Skill scores are visible only in admin mode.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen((open) => !open)}
+          className="min-h-10 rounded-sm bg-black px-4 py-2 text-sm font-black uppercase text-yellow-300"
+        >
+          {isOpen ? "Close Roster" : "Manage Players"}
+        </button>
+      </div>
+
+      {isOpen ? (
+        <div className="mt-4 space-y-4 border-t border-yellow-900/15 pt-4">
+          <div className="rounded-md bg-black p-4 text-white">
+            <h3 className="text-sm font-black uppercase text-yellow-300">Add Player</h3>
+            <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_120px_auto] md:items-end">
+              <label className="grid gap-1 text-xs font-black uppercase text-zinc-300">
+                Name
+                <input
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="h-11 min-w-0 rounded-sm border border-white/20 bg-zinc-950 px-3 text-base font-bold text-white"
+                  placeholder="Player name"
+                />
+              </label>
+              <div>
+                <span className="block text-xs font-black uppercase text-zinc-300">Gender</span>
+                <div className="mt-1 grid h-11 grid-cols-2 overflow-hidden rounded-sm border border-white/20">
+                  {(["men", "women"] as const).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setGender(value)}
+                      className={classNames(
+                        "w-12 font-black uppercase",
+                        gender === value ? "bg-yellow-400 text-black" : "bg-zinc-950 text-white",
+                      )}
+                    >
+                      {value === "men" ? "M" : "F"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="grid gap-1 text-xs font-black uppercase text-zinc-300">
+                Skill Score
+                <input
+                  value={rating}
+                  onChange={(event) => setRating(event.target.value)}
+                  className="h-11 rounded-sm border border-white/20 bg-zinc-950 px-3 text-base font-bold text-white"
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="0.5"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void addPlayer()}
+                disabled={isAdding}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-sm bg-yellow-400 px-4 py-2 font-black uppercase text-black disabled:opacity-60"
+              >
+                {isAdding ? <Loader2 className="animate-spin" size={18} /> : <UserPlus size={18} />}
+                Add
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            {players
+              .slice()
+              .sort((a, b) => {
+                const activeDifference = Number(b.active !== false) - Number(a.active !== false);
+                return activeDifference || a.name.localeCompare(b.name);
+              })
+              .map((player) => (
+                <RosterPlayerRow
+                  key={player.id}
+                  adminPassword={adminPassword}
+                  onSavePlayer={onSavePlayer}
+                  player={player}
+                />
+              ))}
+          </div>
+
+          {message ? <p className="text-sm font-bold text-yellow-800">{message}</p> : null}
+          <p className="text-xs font-semibold text-zinc-600">
+            Roster changes are allowed before scoring a round or between completed rounds. Withdrawing a player keeps every saved result and only removes them from future rounds.
+          </p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function RosterPlayerRow({
+  adminPassword,
+  onSavePlayer,
+  player,
+}: {
+  adminPassword: string;
+  onSavePlayer: (
+    player: {
+      id: string | null;
+      name: string;
+      gender: Player["gender"];
+      rating: number;
+      active: boolean;
+    },
+    adminPassword: string,
+  ) => Promise<void>;
+  player: Player;
+}) {
+  const [rating, setRating] = useState(String(player.rating));
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isConfirmingWithdraw, setIsConfirmingWithdraw] = useState(false);
+  const isActive = player.active !== false;
+
+  useEffect(() => setRating(String(player.rating)), [player.rating]);
+  useEffect(() => {
+    if (!isConfirmingWithdraw) return;
+    const timeoutId = window.setTimeout(() => setIsConfirmingWithdraw(false), 10000);
+    return () => window.clearTimeout(timeoutId);
+  }, [isConfirmingWithdraw]);
+
+  async function save(active: boolean) {
+    const parsedRating = Number(rating);
+    if (!Number.isFinite(parsedRating) || parsedRating < 1 || parsedRating > 10) {
+      setMessage("Use a score from 1 to 10.");
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+    try {
+      await onSavePlayer(
+        {
+          id: player.id,
+          name: player.name,
+          gender: player.gender,
+          rating: parsedRating,
+          active,
+        },
+        adminPassword,
+      );
+      setMessage(active === isActive ? "Skill score updated." : active ? "Restored." : "Withdrawn.");
+      setIsConfirmingWithdraw(false);
+    } catch (saveError) {
+      setMessage(saveError instanceof Error ? saveError.message : "Change was not saved.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div className={classNames("grid gap-3 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_120px_auto] sm:items-center", isActive ? "border-yellow-900/15 bg-white/70" : "border-zinc-300 bg-zinc-100 opacity-75")}>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-black text-black">{player.name}</span>
+          <span className="rounded-sm bg-black px-2 py-0.5 text-xs font-black text-yellow-300">
+            {genderLabel(player.gender)}
+          </span>
+          {!isActive ? <span className="text-xs font-black uppercase text-red-700">Withdrawn</span> : null}
+        </div>
+        {message ? <p className="mt-1 text-xs font-bold text-zinc-600">{message}</p> : null}
+      </div>
+      <label className="grid gap-1 text-xs font-black uppercase text-zinc-600">
+        Skill Score
+        <input
+          value={rating}
+          onChange={(event) => setRating(event.target.value)}
+          className="h-10 rounded-sm border border-zinc-300 bg-white px-3 text-base font-bold text-black"
+          type="number"
+          min="1"
+          max="10"
+          step="0.5"
+        />
+      </label>
+      <div className="grid grid-cols-2 gap-2 sm:flex">
+        <button
+          type="button"
+          onClick={() => {
+            if (isConfirmingWithdraw) {
+              setIsConfirmingWithdraw(false);
+              return;
+            }
+            void save(isActive);
+          }}
+          disabled={isSaving}
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-sm bg-yellow-400 px-3 text-sm font-black uppercase text-black disabled:opacity-60"
+        >
+          {isSaving ? <Loader2 className="animate-spin" size={16} /> : isConfirmingWithdraw ? null : <Save size={16} />}
+          {isConfirmingWithdraw ? "Cancel" : "Update"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (isActive && !isConfirmingWithdraw) {
+              setIsConfirmingWithdraw(true);
+              return;
+            }
+            void save(!isActive);
+          }}
+          disabled={isSaving}
+          className={classNames("inline-flex min-h-10 items-center justify-center gap-2 rounded-sm px-3 text-sm font-black uppercase disabled:opacity-60", isActive ? "bg-red-700 text-white" : "bg-black text-white")}
+        >
+          {isActive ? <UserX size={16} /> : <UserCheck size={16} />}
+          {isActive ? (isConfirmingWithdraw ? "Confirm" : "Withdraw") : "Restore"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -1158,6 +1454,11 @@ function RankingTable({
                   >
                     <UserRound size={18} aria-hidden="true" />
                     {standing.player.name}
+                    {standing.player.active === false ? (
+                      <span className="rounded-sm bg-red-100 px-2 py-0.5 text-[0.65rem] font-black uppercase text-red-700">
+                        Withdrawn
+                      </span>
+                    ) : null}
                   </a>
                   <div className="text-xs font-black uppercase tracking-normal text-zinc-500">
                     {genderLabel(standing.player.gender)}

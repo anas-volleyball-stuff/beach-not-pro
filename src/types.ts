@@ -7,6 +7,7 @@ export type Player = {
   gender: Gender;
   rating: number;
   form_rating?: number;
+  active: boolean;
 };
 
 export type Match = {

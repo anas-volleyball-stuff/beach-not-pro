@@ -152,7 +152,7 @@ export function getRestingPlayers(
     });
 
   return players
-    .filter((player) => !playing.has(player.id))
+    .filter((player) => player.active !== false && !playing.has(player.id))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 

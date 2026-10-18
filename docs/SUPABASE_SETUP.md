@@ -67,6 +67,14 @@ Run it after `10_enable_editions.sql`. It keeps Editions 1 and 2 intact, adds th
 new players and private starting ratings, creates the live form-rating and round
 generation functions, and generates Round 1 automatically.
 
+To add admin roster changes and support a changing number of active players, run:
+
+`supabase/dashboard-setup/13_adaptive_roster_management.sql`
+
+Run it after `12_add_adaptive_edition_three.sql`. It adds safe player withdrawal,
+restoration, skill-score editing, and flexible one-to-three-court generation while
+preserving every completed score.
+
 ## Reset the Tournament
 
 To start the tournament fresh from Supabase SQL Editor without changing the fixed
